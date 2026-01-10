@@ -1,0 +1,60 @@
+interface RecipeDetailProps {
+  recipe: {
+    id: number;
+    title: string;
+    ingredients: string[];
+    instructions: string[];
+    difficulty: 'easy' | 'medium' | 'hard';
+    created_at: string;
+  };
+}
+
+export default function RecipeDetail({ recipe }: RecipeDetailProps) {
+  const difficultyColors = {
+    easy: 'bg-green-100 text-green-800',
+    medium: 'bg-yellow-100 text-yellow-800',
+    hard: 'bg-red-100 text-red-800',
+  };
+
+  const difficultyLabels = {
+    easy: 'Fácil',
+    medium: 'Medio',
+    hard: 'Difícil',
+  };
+
+  return (
+    <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-lg p-6 md:p-8">
+      <div className="mb-6">
+        <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">{recipe.title}</h1>
+        <div className="flex items-center gap-4">
+          <span className={`px-3 py-1 rounded-full text-sm font-semibold ${difficultyColors[recipe.difficulty]}`}>
+            {difficultyLabels[recipe.difficulty]}
+          </span>
+        </div>
+      </div>
+
+      <div className="mb-8">
+        <h2 className="text-2xl font-semibold text-gray-700 mb-4">Ingredientes</h2>
+        <ul className="list-disc list-inside space-y-2 text-gray-600">
+          {recipe.ingredients.map((ingredient, index) => (
+            <li key={index} className="text-lg">{ingredient}</li>
+          ))}
+        </ul>
+      </div>
+
+      <div>
+        <h2 className="text-2xl font-semibold text-gray-700 mb-4">Instrucciones</h2>
+        <ol className="space-y-4">
+          {recipe.instructions.map((instruction, index) => (
+            <li key={index} className="flex gap-4">
+              <span className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">
+                {index + 1}
+              </span>
+              <p className="text-gray-700 text-lg flex-1 pt-1">{instruction}</p>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </div>
+  );
+}
