@@ -39,15 +39,24 @@ export async function GET() {
       [recipe.id]
     );
 
-    return NextResponse.json({
-      id: recipe.id,
-      title: recipe.title,
-      ingredients: ingredients.map(ing => ing.name),
-      instructions: recipe.instructions,
-      difficulty: recipe.difficulty,
-      country: recipe.country,
-      created_at: recipe.created_at,
-    });
+    return NextResponse.json(
+      {
+        id: recipe.id,
+        title: recipe.title,
+        ingredients: ingredients.map(ing => ing.name),
+        instructions: recipe.instructions,
+        difficulty: recipe.difficulty,
+        country: recipe.country,
+        created_at: recipe.created_at,
+      },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      }
+    );
   } catch (error) {
     console.error('Error fetching random recipe:', error);
     return NextResponse.json(
@@ -56,3 +65,7 @@ export async function GET() {
     );
   }
 }
+
+// Force dynamic rendering to prevent caching
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
