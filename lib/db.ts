@@ -15,6 +15,7 @@ if (!connectionString) {
 
 const pool = new Pool({
   connectionString,
+  ssl: true,
 });
 
 export interface Recipe {
