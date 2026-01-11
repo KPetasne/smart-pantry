@@ -37,6 +37,14 @@ CREATE TABLE IF NOT EXISTS search_analytics (
   timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Create admin_users table for backoffice authentication
+CREATE TABLE IF NOT EXISTS admin_users (
+  id SERIAL PRIMARY KEY,
+  username VARCHAR(100) NOT NULL UNIQUE,
+  password_hash VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Create indexes for performance
 CREATE INDEX IF NOT EXISTS idx_ingredients_name ON ingredients(name);
 CREATE INDEX IF NOT EXISTS idx_recipe_ingredients_recipe_id ON recipe_ingredients(recipe_id);
