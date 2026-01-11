@@ -10,9 +10,9 @@ Devuelve SOLO JSON:
   "title": "Nombre",
   "ingredients": ["200g fideos", ...],
   "instructions": [...],
-  "difficulty": "easy" | "medium" | "hard"
+  "difficulty": "easy" | "medium" | "hard",
+  "servings": 4
 }`,
-
   random: () => `Genera una receta japonesa tradicional.
 
 Platos: Ramen, Sushi, Pollo teriyaki, Gyoza, Tempura, Okonomiyaki, Yakisoba, Katsudon, Udon, Tonkatsu
@@ -22,6 +22,7 @@ Devuelve SOLO JSON:
   "title": "Nombre",
   "ingredients": [...],
   "instructions": [...],
-  "difficulty": "easy" | "medium" | "hard"
+  "difficulty": "easy" | "medium" | "hard",
+  "servings": 4
 }`,
 };

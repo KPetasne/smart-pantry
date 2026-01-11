@@ -8,6 +8,7 @@ export interface GeneratedRecipe {
   ingredients: string[];
   instructions: string[];
   difficulty: 'easy' | 'medium' | 'hard';
+  servings?: number;
   country: Country;
   language: string;
 }
@@ -64,11 +65,21 @@ export class GeminiService {
         parsed.difficulty = 'medium';
       }
       
+      // Validate servings if present
+      let servings: number | undefined = undefined;
+      if (parsed.servings !== undefined && parsed.servings !== null) {
+        const servingsNum = typeof parsed.servings === 'number' ? parsed.servings : parseInt(parsed.servings, 10);
+        if (!isNaN(servingsNum) && servingsNum >= 1 && servingsNum <= 12) {
+          servings = servingsNum;
+        }
+      }
+      
       return {
         title: parsed.title,
         ingredients: Array.isArray(parsed.ingredients) ? parsed.ingredients : [],
         instructions: Array.isArray(parsed.instructions) ? parsed.instructions : [],
         difficulty: parsed.difficulty,
+        ...(servings !== undefined && { servings }),
       };
     } catch (error) {
       console.error('Error parsing Gemini response:', error);

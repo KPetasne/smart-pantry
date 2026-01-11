@@ -14,9 +14,10 @@ async function getRecipe(id: number) {
       title: string;
       instructions: any;
       difficulty: string;
+      servings: number | null;
       created_at: Date;
     }>(
-      'SELECT id, title, instructions, difficulty, created_at FROM recipes WHERE id = $1',
+      'SELECT id, title, instructions, difficulty, servings, created_at FROM recipes WHERE id = $1',
       [id]
     );
 
@@ -46,6 +47,7 @@ async function getRecipe(id: number) {
           ? JSON.parse(recipe.instructions) 
           : [],
       difficulty: recipe.difficulty as 'easy' | 'medium' | 'hard',
+      servings: recipe.servings ?? undefined,
       created_at: recipe.created_at.toISOString(),
     };
   } catch (error) {

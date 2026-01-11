@@ -10,9 +10,9 @@ Devuelve SOLO JSON:
   "title": "Nombre",
   "ingredients": ["300g pollo", ...],
   "instructions": [...],
-  "difficulty": "easy" | "medium" | "hard"
+  "difficulty": "easy" | "medium" | "hard",
+  "servings": 4
 }`,
-
   random: () => `Genera una receta china tradicional.
 
 Platos: Chow mein, Kung pao chicken, Arroz frito, Dumplings, Mapo tofu, Spring rolls
@@ -22,6 +22,7 @@ Devuelve SOLO JSON:
   "title": "Nombre",
   "ingredients": [...],
   "instructions": [...],
-  "difficulty": "easy" | "medium" | "hard"
+  "difficulty": "easy" | "medium" | "hard",
+  "servings": 4
 }`,
 };

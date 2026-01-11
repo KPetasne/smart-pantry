@@ -9,6 +9,7 @@ const recipeSchema = z.object({
   ingredients: z.array(z.string().min(1)).min(1),
   instructions: z.array(z.string().min(1)).min(1),
   difficulty: z.enum(['easy', 'medium', 'hard']),
+  servings: z.number().int().min(1).max(12).optional(),
   language: z.string().length(2).default('es'),
   country: z.string().min(1).max(50).default('argentina'),
 });
@@ -38,11 +39,12 @@ export async function GET(
       title: string;
       instructions: any;
       difficulty: string;
+      servings: number | null;
       language: string;
       country: string;
       created_at: Date;
     }>(
-      'SELECT id, title, instructions, difficulty, language, country, created_at FROM recipes WHERE id = $1',
+      'SELECT id, title, instructions, difficulty, servings, language, country, created_at FROM recipes WHERE id = $1',
       [recipeId]
     );
 
@@ -72,6 +74,7 @@ export async function GET(
           ? JSON.parse(recipe.instructions) 
           : [],
       difficulty: recipe.difficulty,
+      servings: recipe.servings,
       language: recipe.language,
       country: recipe.country,
       created_at: recipe.created_at,
@@ -114,12 +117,13 @@ export async function PUT(
     // Update recipe
     await execute(
       `UPDATE recipes 
-       SET title = $1, instructions = $2::jsonb, difficulty = $3, language = $4, country = $5 
-       WHERE id = $6`,
+       SET title = $1, instructions = $2::jsonb, difficulty = $3, servings = $4, language = $5, country = $6 
+       WHERE id = $7`,
       [
         recipe.title,
         JSON.stringify(recipe.instructions),
         recipe.difficulty,
+        recipe.servings ?? null,
         recipe.language,
         recipe.country,
         recipeId,

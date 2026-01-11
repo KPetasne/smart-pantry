@@ -8,9 +8,9 @@ Devuelve SOLO JSON:
   "title": "Nombre del plato",
   "ingredients": ["200g pasta", ...],
   "instructions": ["paso1", ...],
-  "difficulty": "easy" | "medium" | "hard"
+  "difficulty": "easy" | "medium" | "hard",
+  "servings": 4
 }`,
-
   random: () => `Genera una receta italiana AUTÉNTICA.
 
 Platos: Spaghetti carbonara, Risotto ai funghi, Pizza napoletana, Lasagna, Osso buco, Tiramisù, Gnocchi al pesto, Cacio e pepe, Panna cotta
@@ -20,6 +20,7 @@ Devuelve SOLO JSON:
   "title": "Nombre",
   "ingredients": [...],
   "instructions": [...],
-  "difficulty": "easy" | "medium" | "hard"
+  "difficulty": "easy" | "medium" | "hard",
+  "servings": 4
 }`,
 };

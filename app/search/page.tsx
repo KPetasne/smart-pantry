@@ -11,6 +11,7 @@ interface Recipe {
   ingredients: string[];
   instructions: string[];
   difficulty: 'easy' | 'medium' | 'hard';
+  servings?: number;
   created_at: string;
   fromCache?: boolean;
 }

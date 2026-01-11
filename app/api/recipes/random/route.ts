@@ -9,11 +9,12 @@ export async function GET() {
       title: string;
       instructions: any;
       difficulty: string;
+      servings: number | null;
       language: string;
       country: string;
       created_at: Date;
     }>(
-      `SELECT id, title, instructions, difficulty, language, country, created_at 
+      `SELECT id, title, instructions, difficulty, servings, language, country, created_at 
        FROM recipes 
        WHERE language = 'es'
        ORDER BY RANDOM() 
@@ -46,6 +47,7 @@ export async function GET() {
         ingredients: ingredients.map(ing => ing.name),
         instructions: recipe.instructions,
         difficulty: recipe.difficulty,
+        servings: recipe.servings ?? undefined,
         country: recipe.country,
         created_at: recipe.created_at,
       },
