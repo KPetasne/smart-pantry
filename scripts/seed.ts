@@ -1,8 +1,9 @@
+import 'dotenv/config';
 import { query, execute } from '../lib/db';
 import { GeminiService } from '../lib/gemini-service';
 import { validateRecipeData } from '../lib/recipe-normalizer';
 
-const TARGET_RECIPES = 20;
+const DEFAULT_TARGET_RECIPES = 20;
 const BATCH_SIZE = 2; // Process recipes in batches to avoid overwhelming the API
 
 interface RecipeData {
@@ -14,8 +15,10 @@ interface RecipeData {
   country: string;
 }
 
-async function initializeSchema() {
-  console.log('Initializing database schema...');
+type LogFunction = (message: string) => void;
+
+async function initializeSchema(log: LogFunction = console.log) {
+  log('Initializing database schema...');
   const schema = `
     -- Create recipes table
     CREATE TABLE IF NOT EXISTS recipes (
@@ -73,10 +76,10 @@ async function initializeSchema() {
       await execute(statement);
     } catch (error) {
       // Ignore errors for IF NOT EXISTS statements
-      console.warn('Schema statement warning:', error);
+      log(`Schema statement warning: ${error}`);
     }
   }
-  console.log('Schema initialized successfully');
+  log('Schema initialized successfully');
 }
 
 async function getOrCreateIngredient(name: string): Promise<number> {
@@ -127,8 +130,8 @@ async function insertRecipe(recipe: RecipeData, language: string = 'es', country
   return recipeId;
 }
 
-async function seedRecipes() {
-  console.log(`Starting seed process for ${TARGET_RECIPES} recipes...`);
+export async function seedRecipes(log: LogFunction = console.log, targetRecipes: number = DEFAULT_TARGET_RECIPES) {
+  log(`Starting seed process for ${targetRecipes} recipes...`);
   
   const geminiService = new GeminiService();
   let successCount = 0;
@@ -141,19 +144,19 @@ async function seedRecipes() {
   const existing = await query<{ count: string }>('SELECT COUNT(*) as count FROM recipes');
   const existingCount = parseInt(existing[0].count);
   
-  if (existingCount >= TARGET_RECIPES) {
-    console.log(`Already have ${existingCount} recipes. Target reached.`);
+  if (existingCount >= targetRecipes) {
+    log(`Already have ${existingCount} recipes. Target reached.`);
     return;
   }
 
-  const recipesToGenerate = TARGET_RECIPES - existingCount;
-  console.log(`Generating ${recipesToGenerate} new recipes from all countries...`);
+  const recipesToGenerate = targetRecipes - existingCount;
+  log(`Generating ${recipesToGenerate} new recipes from all countries...`);
 
   for (let i = 0; i < recipesToGenerate; i += BATCH_SIZE) {
     const batchSize = Math.min(BATCH_SIZE, recipesToGenerate - i);
     const batch = Array.from({ length: batchSize }, (_, idx) => i + idx + 1);
 
-    console.log(`\nProcessing batch ${Math.floor(i / BATCH_SIZE) + 1} (recipes ${i + 1}-${i + batchSize})...`);
+    log(`\nProcessing batch ${Math.floor(i / BATCH_SIZE) + 1} (recipes ${i + 1}-${i + batchSize})...`);
 
     const promises = batch.map(async (recipeNum) => {
       try {
@@ -170,12 +173,12 @@ async function seedRecipes() {
         const recipeId = await insertRecipe(validatedRecipe, validatedRecipe.language, validatedRecipe.country);
         
         successCount++;
-        console.log(`✓ Recipe ${recipeNum}/${recipesToGenerate}: "${validatedRecipe.title}" [${randomCountry.toUpperCase()}] (ID: ${recipeId})`);
+        log(`✓ Recipe ${recipeNum}/${recipesToGenerate}: "${validatedRecipe.title}" [${randomCountry.toUpperCase()}] (ID: ${recipeId})`);
         
         return { success: true, recipeNum };
       } catch (error) {
         errorCount++;
-        console.error(`✗ Recipe ${recipeNum}/${recipesToGenerate} failed:`, error);
+        log(`✗ Recipe ${recipeNum}/${recipesToGenerate} failed: ${error}`);
         return { success: false, recipeNum, error };
       }
     });
@@ -184,18 +187,18 @@ async function seedRecipes() {
 
     // Add a small delay between batches to avoid rate limiting
     if (i + BATCH_SIZE < recipesToGenerate) {
-      console.log('Waiting 5 seconds before next batch...');
+      log('Waiting 5 seconds before next batch...');
       await new Promise(resolve => setTimeout(resolve, 5000));
     }
   }
 
-  console.log(`\n=== Seed Complete ===`);
-  console.log(`Successfully created: ${successCount} recipes`);
-  console.log(`Errors: ${errorCount} recipes`);
+  log(`\n=== Seed Complete ===`);
+  log(`Successfully created: ${successCount} recipes`);
+  log(`Errors: ${errorCount} recipes`);
   
   // Final count
   const final = await query<{ count: string }>('SELECT COUNT(*) as count FROM recipes');
-  console.log(`Total recipes in database: ${final[0].count}`);
+  log(`Total recipes in database: ${final[0].count}`);
 }
 
 async function main() {
@@ -209,4 +212,7 @@ async function main() {
   }
 }
 
-main();
+// Only run main if called directly
+if (require.main === module) {
+  main();
+}

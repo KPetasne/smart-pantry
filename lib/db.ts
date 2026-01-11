@@ -1,6 +1,3 @@
-// Load environment variables from .env.local (must be first)
-import 'dotenv/config';
-
 import { Pool } from 'pg';
 
 // Support both DATABASE_URL (standard) and POSTGRES_URL (Vercel default)
@@ -15,7 +12,7 @@ if (!connectionString) {
 
 const pool = new Pool({
   connectionString,
-  ssl: true,
+  ssl: connectionString.includes('localhost') ? false : true,
 });
 
 export interface Recipe {

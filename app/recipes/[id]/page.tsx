@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { query } from '@/lib/db';
 
 interface PageProps {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 }
 
 async function getRecipe(id: number) {
@@ -55,8 +55,7 @@ async function getRecipe(id: number) {
 }
 
 export default async function RecipePage({ params }: PageProps) {
-  const { id } = await params;
-  const recipeId = parseInt(id);
+  const recipeId = parseInt(params.id);
 
   if (isNaN(recipeId)) {
     notFound();

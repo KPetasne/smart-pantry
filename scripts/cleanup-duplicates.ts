@@ -1,7 +1,10 @@
+import 'dotenv/config';
 import { query, execute } from '../lib/db';
 
-async function removeDuplicateRecipes() {
-  console.log('Searching for duplicate recipes...');
+type LogFunction = (message: string) => void;
+
+export async function removeDuplicateRecipes(log: LogFunction = console.log) {
+  log('Searching for duplicate recipes...');
   
   // Find duplicate recipes by title
   const duplicates = await query<{
@@ -20,11 +23,11 @@ async function removeDuplicateRecipes() {
   `);
 
   if (duplicates.length === 0) {
-    console.log('No duplicate recipes found.');
+    log('No duplicate recipes found.');
     return;
   }
 
-  console.log(`Found ${duplicates.length} duplicate recipe titles.`);
+  log(`Found ${duplicates.length} duplicate recipe titles.`);
   
   let deletedCount = 0;
 
@@ -32,7 +35,7 @@ async function removeDuplicateRecipes() {
     // Keep the most recent one (first in ids array), delete the rest
     const idsToDelete = dup.ids.slice(1);
     
-    console.log(`"${dup.title}": ${dup.count} copies, keeping ID ${dup.ids[0]}, deleting ${idsToDelete.length} older copies...`);
+    log(`"${dup.title}": ${dup.count} copies, keeping ID ${dup.ids[0]}, deleting ${idsToDelete.length} older copies...`);
     
     for (const id of idsToDelete) {
       await execute('DELETE FROM recipes WHERE id = $1', [id]);
@@ -40,11 +43,11 @@ async function removeDuplicateRecipes() {
     }
   }
 
-  console.log(`\n✓ Deleted ${deletedCount} duplicate recipes.`);
+  log(`\n✓ Deleted ${deletedCount} duplicate recipes.`);
   
   // Show final count
   const final = await query<{ count: string }>('SELECT COUNT(*) as count FROM recipes');
-  console.log(`Total recipes remaining: ${final[0].count}`);
+  log(`Total recipes remaining: ${final[0].count}`);
 }
 
 async function main() {
@@ -57,4 +60,7 @@ async function main() {
   }
 }
 
-main();
+// Only run main if called directly
+if (require.main === module) {
+  main();
+}
