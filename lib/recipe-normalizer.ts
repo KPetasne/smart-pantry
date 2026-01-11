@@ -6,7 +6,7 @@ export function normalizeIngredient(ingredient: string): string {
     .trim()
     .toLowerCase()
     .replace(/\s+/g, ' ') // Replace multiple spaces with single space
-    .replace(/[^\w\s]/g, '') // Remove special characters
+    .replace(/[^\w\sñáéíóúüÑÁÉÍÓÚÜ.,;:!¡?¿()\[\]{}"'`\/\-]/g, '') // Remove unwanted special characters while preserving Spanish chars and common punctuation
     .trim();
 }
 
