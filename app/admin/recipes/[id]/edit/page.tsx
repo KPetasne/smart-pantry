@@ -1,16 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 const countries = ['argentina', 'mexico', 'spain', 'italy', 'china', 'japan', 'peru', 'usa'];
 
 interface EditRecipePageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export default function EditRecipePage({ params }: EditRecipePageProps) {
+  const resolvedParams = use(params);
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
@@ -26,8 +27,8 @@ export default function EditRecipePage({ params }: EditRecipePageProps) {
   });
 
   useEffect(() => {
-    fetchRecipe(params.id);
-  }, [params.id]);
+    fetchRecipe(resolvedParams.id);
+  }, [resolvedParams.id]);
 
   const fetchRecipe = async (recipeId: string) => {
     try {
@@ -80,7 +81,7 @@ export default function EditRecipePage({ params }: EditRecipePageProps) {
         return;
       }
 
-      const response = await fetch(`/api/admin/recipes/${params.id}`, {
+      const response = await fetch(`/api/admin/recipes/${resolvedParams.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
