@@ -13,6 +13,7 @@ if (!connectionString) {
 const pool = new Pool({
   connectionString,
   ssl: false,
+  client_encoding: 'UTF8',
 });
 
 export interface Recipe {
