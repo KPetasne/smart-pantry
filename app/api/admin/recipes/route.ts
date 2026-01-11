@@ -10,6 +10,7 @@ const recipeSchema = z.object({
   ingredients: z.array(z.string().min(1)).min(1),
   instructions: z.array(z.string().min(1)).min(1),
   difficulty: z.enum(['easy', 'medium', 'hard']),
+  servings: z.number().int().min(1).max(12).optional(),
   language: z.string().length(2).default('es'),
   country: z.string().min(1).max(50).default('argentina'),
 });
@@ -39,11 +40,12 @@ export async function GET(request: Request) {
       id: number;
       title: string;
       difficulty: string;
+      servings: number | null;
       language: string;
       country: string;
       created_at: Date;
     }>(
-      `SELECT id, title, difficulty, language, country, created_at 
+      `SELECT id, title, difficulty, servings, language, country, created_at 
        FROM recipes 
        ORDER BY created_at DESC 
        LIMIT $1 OFFSET $2`,
@@ -80,13 +82,14 @@ export async function POST(request: Request) {
 
     // Insert recipe
     const recipeResult = await query<{ id: number }>(
-      `INSERT INTO recipes (title, instructions, difficulty, language, country) 
-       VALUES ($1, $2::jsonb, $3, $4, $5) 
+      `INSERT INTO recipes (title, instructions, difficulty, servings, language, country) 
+       VALUES ($1, $2::jsonb, $3, $4, $5, $6) 
        RETURNING id`,
       [
         recipe.title,
         JSON.stringify(recipe.instructions),
         recipe.difficulty,
+        recipe.servings ?? null,
         recipe.language,
         recipe.country,
       ]

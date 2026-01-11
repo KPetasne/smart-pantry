@@ -8,6 +8,7 @@ interface Recipe {
   id: number;
   title: string;
   difficulty: string;
+  servings: number | null;
   language: string;
   country: string;
   created_at: string;
@@ -116,6 +117,9 @@ export default function RecipesListPage() {
                 Dificultad
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Porciones
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 País
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -136,6 +140,9 @@ export default function RecipesListPage() {
                   <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${difficultyColors[recipe.difficulty]}`}>
                     {difficultyLabels[recipe.difficulty]}
                   </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {recipe.servings ?? '-'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 capitalize">
                   {recipe.country}

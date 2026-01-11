@@ -32,6 +32,7 @@ export async function POST(request: Request) {
       title: string;
       instructions: any;
       difficulty: string;
+      servings: number | null;
       language: string;
       created_at: Date;
       match_count: number;
@@ -41,6 +42,7 @@ export async function POST(request: Request) {
         r.title,
         r.instructions,
         r.difficulty,
+        r.servings,
         r.language,
         r.created_at,
         COUNT(ri.ingredient_id) as match_count
@@ -48,7 +50,7 @@ export async function POST(request: Request) {
       INNER JOIN recipe_ingredients ri ON r.id = ri.recipe_id
       INNER JOIN ingredients i ON ri.ingredient_id = i.id
       WHERE i.name = ANY($1::text[]) AND r.language = 'es'
-      GROUP BY r.id, r.title, r.instructions, r.difficulty, r.language, r.created_at
+      GROUP BY r.id, r.title, r.instructions, r.difficulty, r.servings, r.language, r.created_at
       HAVING COUNT(DISTINCT i.name) = $2
       ORDER BY r.created_at DESC
       LIMIT 1`,
@@ -80,6 +82,7 @@ export async function POST(request: Request) {
         ingredients: recipeIngredients.map(ing => ing.name),
         instructions: recipe.instructions,
         difficulty: recipe.difficulty,
+        servings: recipe.servings ?? undefined,
         created_at: recipe.created_at,
         fromCache: true,
       });
@@ -93,10 +96,10 @@ export async function POST(request: Request) {
     // Insert into database using transaction
     // First, insert the recipe
     const recipeResult = await query<{ id: number }>(
-      `INSERT INTO recipes (title, instructions, difficulty, language, country) 
-       VALUES ($1, $2::jsonb, $3, $4, $5) 
+      `INSERT INTO recipes (title, instructions, difficulty, servings, language, country) 
+       VALUES ($1, $2::jsonb, $3, $4, $5, $6) 
        RETURNING id`,
-      [validatedRecipe.title, JSON.stringify(validatedRecipe.instructions), validatedRecipe.difficulty, validatedRecipe.language, validatedRecipe.country]
+      [validatedRecipe.title, JSON.stringify(validatedRecipe.instructions), validatedRecipe.difficulty, validatedRecipe.servings ?? null, validatedRecipe.language, validatedRecipe.country]
     );
 
     const recipeId = recipeResult[0].id;
@@ -134,6 +137,7 @@ export async function POST(request: Request) {
       ingredients: validatedRecipe.ingredients,
       instructions: validatedRecipe.instructions,
       difficulty: validatedRecipe.difficulty,
+      servings: validatedRecipe.servings,
       created_at: new Date(),
       fromCache: false,
     });

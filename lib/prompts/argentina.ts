@@ -12,7 +12,8 @@ Devuelve SOLO un objeto JSON válido (sin markdown):
   "title": "Nombre exacto del plato argentino",
   "ingredients": ["500g de carne picada", "4 papas grandes", ...],
   "instructions": ["Paso 1 detallado", ...],
-  "difficulty": "easy" | "medium" | "hard"
+  "difficulty": "easy" | "medium" | "hard",
+  "servings": 4
 }`,
 
   random: () => `Eres un chef experto en cocina casera argentina. Genera una receta REAL y AUTÉNTICA de un plato tradicional argentino.
@@ -25,6 +26,7 @@ Devuelve SOLO JSON (sin markdown):
   "title": "Nombre del plato",
   "ingredients": ["500g ingrediente", ...],
   "instructions": ["paso1", ...],
-  "difficulty": "easy" | "medium" | "hard"
+  "difficulty": "easy" | "medium" | "hard",
+  "servings": 4
 }`,
 };

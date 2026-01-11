@@ -8,9 +8,9 @@ Devuelve SOLO JSON:
   "title": "Nombre",
   "ingredients": ["500g carne", ...],
   "instructions": [...],
-  "difficulty": "easy" | "medium" | "hard"
+  "difficulty": "easy" | "medium" | "hard",
+  "servings": 4
 }`,
-
   random: () => `Genera una receta americana clásica.
 
 Platos: Classic burger, BBQ ribs, Mac and cheese, Fried chicken, Apple pie, Brownies, Buffalo wings, Pulled pork, Meatloaf, Pancakes
@@ -20,6 +20,7 @@ Devuelve SOLO JSON:
   "title": "Nombre",
   "ingredients": [...],
   "instructions": [...],
-  "difficulty": "easy" | "medium" | "hard"
+  "difficulty": "easy" | "medium" | "hard",
+  "servings": 4
 }`,
 };

@@ -22,6 +22,7 @@ export default function EditRecipePage({ params }: EditRecipePageProps) {
     ingredients: '',
     instructions: '',
     difficulty: 'medium' as 'easy' | 'medium' | 'hard',
+    servings: undefined as number | undefined,
     language: 'es',
     country: 'argentina',
   });
@@ -43,6 +44,7 @@ export default function EditRecipePage({ params }: EditRecipePageProps) {
         ingredients: recipe.ingredients.join('\n'),
         instructions: recipe.instructions.join('\n'),
         difficulty: recipe.difficulty,
+        servings: recipe.servings,
         language: recipe.language,
         country: recipe.country,
       });
@@ -89,6 +91,7 @@ export default function EditRecipePage({ params }: EditRecipePageProps) {
           ingredients,
           instructions,
           difficulty: formData.difficulty,
+          servings: formData.servings,
           language: formData.language,
           country: formData.country,
         }),
@@ -167,7 +170,7 @@ export default function EditRecipePage({ params }: EditRecipePageProps) {
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <label htmlFor="difficulty" className="block text-sm font-medium text-gray-700 mb-2">
                 Dificultad *
@@ -182,6 +185,22 @@ export default function EditRecipePage({ params }: EditRecipePageProps) {
                 <option value="medium">Medio</option>
                 <option value="hard">Difícil</option>
               </select>
+            </div>
+
+            <div>
+              <label htmlFor="servings" className="block text-sm font-medium text-gray-700 mb-2">
+                Porciones
+              </label>
+              <input
+                type="number"
+                id="servings"
+                value={formData.servings ?? ''}
+                onChange={(e) => setFormData({ ...formData, servings: e.target.value ? parseInt(e.target.value) : undefined })}
+                min="1"
+                max="12"
+                placeholder="1-12"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+              />
             </div>
 
             <div>

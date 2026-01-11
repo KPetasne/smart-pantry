@@ -9,6 +9,7 @@ interface Recipe {
   ingredients: string[];
   instructions: string[];
   difficulty: 'easy' | 'medium' | 'hard';
+  servings?: number;
   created_at: string;
 }
 
@@ -71,6 +72,7 @@ export default function RandomRecipe() {
         title={recipe.title}
         ingredients={recipe.ingredients}
         difficulty={recipe.difficulty}
+        servings={recipe.servings}
       />
       <div className="mt-4 text-center">
         <button

@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS recipes (
   title VARCHAR(255) NOT NULL,
   instructions JSONB NOT NULL,
   difficulty VARCHAR(20) CHECK (difficulty IN ('easy', 'medium', 'hard')) NOT NULL,
+  servings INTEGER CHECK (servings >= 1 AND servings <= 12),
   language VARCHAR(5) DEFAULT 'es' NOT NULL,
   country VARCHAR(50) DEFAULT 'argentina' NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

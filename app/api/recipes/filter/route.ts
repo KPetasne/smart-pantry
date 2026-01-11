@@ -14,7 +14,7 @@ export async function POST(request: Request) {
     const { diet, difficulty, limit } = filterSchema.parse(body);
 
     let queryText = `
-      SELECT r.id, r.title, r.instructions, r.difficulty, r.language, r.country, r.created_at
+      SELECT r.id, r.title, r.instructions, r.difficulty, r.servings, r.language, r.country, r.created_at
       FROM recipes r
     `;
     const params: any[] = [];
@@ -75,6 +75,7 @@ export async function POST(request: Request) {
       title: string;
       instructions: any;
       difficulty: string;
+      servings: number | null;
       language: string;
       country: string;
       created_at: Date;
@@ -98,6 +99,7 @@ export async function POST(request: Request) {
           ingredients: ingredients.map(ing => ing.name),
           instructions: recipe.instructions,
           difficulty: recipe.difficulty,
+          servings: recipe.servings ?? undefined,
           country: recipe.country,
           created_at: recipe.created_at,
         };

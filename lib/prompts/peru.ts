@@ -10,9 +10,9 @@ Devuelve SOLO JSON:
   "title": "Nombre",
   "ingredients": ["500g pescado", ...],
   "instructions": [...],
-  "difficulty": "easy" | "medium" | "hard"
+  "difficulty": "easy" | "medium" | "hard",
+  "servings": 4
 }`,
-
   random: () => `Genera una receta peruana tradicional.
 
 Platos: Ceviche, Lomo saltado, Ají de gallina, Causa limeña, Anticuchos, Papa a la huancaína, Pollo a la brasa
@@ -22,6 +22,7 @@ Devuelve SOLO JSON:
   "title": "Nombre",
   "ingredients": [...],
   "instructions": [...],
-  "difficulty": "easy" | "medium" | "hard"
+  "difficulty": "easy" | "medium" | "hard",
+  "servings": 4
 }`,
 };

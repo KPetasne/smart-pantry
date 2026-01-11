@@ -1,3 +1,5 @@
+import { UserGroupIcon } from '@heroicons/react/24/outline';
+
 interface RecipeDetailProps {
   recipe: {
     id: number;
@@ -5,6 +7,7 @@ interface RecipeDetailProps {
     ingredients: string[];
     instructions: string[];
     difficulty: 'easy' | 'medium' | 'hard';
+    servings?: number;
     created_at: string;
   };
 }
@@ -30,6 +33,12 @@ export default function RecipeDetail({ recipe }: RecipeDetailProps) {
           <span className={`px-3 py-1 rounded-full text-sm font-semibold ${difficultyColors[recipe.difficulty]}`}>
             {difficultyLabels[recipe.difficulty]}
           </span>
+          {recipe.servings && (
+            <div className="flex items-center gap-1.5 text-gray-600">
+              <UserGroupIcon className="w-5 h-5" />
+              <span className="text-sm font-medium">{recipe.servings}</span>
+            </div>
+          )}
         </div>
       </div>
 
