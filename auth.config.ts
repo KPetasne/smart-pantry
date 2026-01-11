@@ -10,6 +10,10 @@ export const authConfig: NextAuthConfig = {
   },
   providers: [
     Credentials({
+      credentials: {
+        username: { label: "Username", type: "text" },
+        password: { label: "Password", type: "password" }
+      },
       async authorize(credentials, request) {
         // Get IP from request
         const ip = request.headers?.get('x-forwarded-for') || 

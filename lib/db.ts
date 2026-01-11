@@ -12,7 +12,7 @@ if (!connectionString) {
 
 const pool = new Pool({
   connectionString,
-  ssl: connectionString.includes('localhost') ? false : true,
+  ssl: false,
 });
 
 export interface Recipe {
