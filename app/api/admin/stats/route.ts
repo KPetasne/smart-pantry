@@ -32,15 +32,16 @@ export async function GET() {
     });
 
     // By country
-    const countryResult = await query<{ country: string; count: string }>(
-      `SELECT country, COUNT(*) as count 
-       FROM recipes 
-       GROUP BY country 
+    const countryResult = await query<{ country_name: string; count: string }>(
+      `SELECT c.name as country_name, COUNT(*) as count 
+       FROM recipes r
+       INNER JOIN countries c ON r.country_id = c.id
+       GROUP BY c.name 
        ORDER BY count DESC`
     );
     const byCountry: { [key: string]: number } = {};
     countryResult.forEach(row => {
-      byCountry[row.country] = parseInt(row.count);
+      byCountry[row.country_name] = parseInt(row.count);
     });
 
     return NextResponse.json({

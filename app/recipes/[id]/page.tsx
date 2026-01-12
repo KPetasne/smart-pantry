@@ -12,12 +12,14 @@ async function getRecipe(id: number) {
     const recipes = await query<{
       id: number;
       title: string;
-      instructions: any;
+      description: string;
+      prep_time: number;
+      cook_time: number;
       difficulty: string;
       servings: number | null;
       created_at: Date;
     }>(
-      'SELECT id, title, instructions, difficulty, servings, created_at FROM recipes WHERE id = $1',
+      'SELECT id, title, description, prep_time, cook_time, difficulty, servings, created_at FROM recipes WHERE id = $1',
       [id]
     );
 
@@ -27,25 +29,32 @@ async function getRecipe(id: number) {
 
     const recipe = recipes[0];
 
+    // Get instructions
+    const instructions = await query<{ instruction: string }>(
+      `SELECT instruction
+       FROM instructions
+       WHERE recipe_id = $1
+       ORDER BY step_number`,
+      [recipe.id]
+    );
+
     // Get ingredients
-    const ingredients = await query<{ name: string }>(
-      `SELECT i.name 
-       FROM ingredients i
-       INNER JOIN recipe_ingredients ri ON i.id = ri.ingredient_id
+    const ingredients = await query<{ quantity: string }>(
+      `SELECT ri.quantity
+       FROM recipe_ingredients ri
        WHERE ri.recipe_id = $1
-       ORDER BY i.name`,
+       ORDER BY ri.ingredient_id`,
       [recipe.id]
     );
 
     return {
       id: recipe.id,
       title: recipe.title,
-      ingredients: ingredients.map(ing => ing.name),
-      instructions: Array.isArray(recipe.instructions) 
-        ? recipe.instructions 
-        : typeof recipe.instructions === 'string' 
-          ? JSON.parse(recipe.instructions) 
-          : [],
+      description: recipe.description,
+      prepTime: recipe.prep_time,
+      cookTime: recipe.cook_time,
+      ingredients: ingredients.map(ing => ing.quantity),
+      instructions: instructions.map(i => i.instruction),
       difficulty: recipe.difficulty as 'easy' | 'medium' | 'hard',
       servings: recipe.servings ?? undefined,
       created_at: recipe.created_at.toISOString(),
