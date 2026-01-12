@@ -5,6 +5,9 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 export interface GeneratedRecipe {
   title: string;
+  description: string;
+  prepTime: number;
+  cookTime: number;
   ingredients: string[];
   instructions: string[];
   difficulty: 'easy' | 'medium' | 'hard';
@@ -74,8 +77,16 @@ export class GeminiService {
         }
       }
       
+      // Extract description, prepTime, cookTime with defaults
+      const description = parsed.description || parsed.title;
+      const prepTime = typeof parsed.prepTime === 'number' ? parsed.prepTime : 15;
+      const cookTime = typeof parsed.cookTime === 'number' ? parsed.cookTime : 30;
+      
       return {
         title: parsed.title,
+        description,
+        prepTime,
+        cookTime,
         ingredients: Array.isArray(parsed.ingredients) ? parsed.ingredients : [],
         instructions: Array.isArray(parsed.instructions) ? parsed.instructions : [],
         difficulty: parsed.difficulty,

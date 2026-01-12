@@ -1,19 +1,10 @@
 import 'dotenv/config';
 import { query, execute } from '../lib/db';
 import { GeminiService } from '../lib/gemini-service';
-import { validateRecipeData } from '../lib/recipe-normalizer';
+import { validateRecipeData, type RecipeData } from '../lib/recipe-normalizer';
 
 const DEFAULT_TARGET_RECIPES = 20;
 const BATCH_SIZE = 2; // Process recipes in batches to avoid overwhelming the API
-
-interface RecipeData {
-  title: string;
-  ingredients: string[];
-  instructions: string[];
-  difficulty: 'easy' | 'medium' | 'hard';
-  language: string;
-  country: string;
-}
 
 type LogFunction = (message: string) => void;
 
@@ -26,6 +17,7 @@ async function initializeSchema(log: LogFunction = console.log) {
       title VARCHAR(255) NOT NULL,
       instructions JSONB NOT NULL,
       difficulty VARCHAR(20) CHECK (difficulty IN ('easy', 'medium', 'hard')) NOT NULL,
+      servings INTEGER CHECK (servings >= 1 AND servings <= 12),
       language VARCHAR(5) DEFAULT 'es' NOT NULL,
       country VARCHAR(50) DEFAULT 'argentina' NOT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -83,7 +75,12 @@ async function initializeSchema(log: LogFunction = console.log) {
 }
 
 async function getOrCreateIngredient(name: string): Promise<number> {
-  const normalized = name.trim().toLowerCase();
+  // Ensure name is a string and normalize it
+  const normalized = String(name || '').trim().toLowerCase();
+  
+  if (!normalized) {
+    throw new Error('Ingredient name cannot be empty');
+  }
   
   // Try to find existing ingredient
   const existing = await query<{ id: number }>(
@@ -95,35 +92,100 @@ async function getOrCreateIngredient(name: string): Promise<number> {
     return existing[0].id;
   }
 
-  // Create new ingredient
-  const result = await query<{ id: number }>(
-    'INSERT INTO ingredients (name) VALUES ($1) ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name RETURNING id',
-    [normalized]
-  );
+  // Create new ingredient (ignore if already exists)
+  try {
+    const result = await query<{ id: number }>(
+      'INSERT INTO ingredients (name) VALUES ($1) RETURNING id',
+      [normalized]
+    );
+    return result[0].id;
+  } catch (error: any) {
+    // If unique constraint violation, fetch the existing id
+    if (error.code === '23505') { // Unique violation error code
+      const existing = await query<{ id: number }>(
+        'SELECT id FROM ingredients WHERE name = $1',
+        [normalized]
+      );
+      if (existing.length > 0) {
+        return existing[0].id;
+      }
+    }
+    throw error;
+  }
+}
 
+async function getCountryId(countryCode: string): Promise<number> {
+  const result = await query<{ id: number }>(
+    'SELECT id FROM countries WHERE code = $1',
+    [countryCode.toUpperCase()]
+  );
+  
+  if (result.length === 0) {
+    throw new Error(`Country code ${countryCode} not found`);
+  }
+  
   return result[0].id;
 }
 
 async function insertRecipe(recipe: RecipeData, language: string = 'es', country: string = 'argentina'): Promise<number> {
-  // Insert recipe
+  // Map country name to country code
+  const countryCodeMap: { [key: string]: string } = {
+    'argentina': 'AR',
+    'mexico': 'MX',
+    'spain': 'ES',
+    'italy': 'IT',
+    'china': 'CN',
+    'japan': 'JP',
+    'peru': 'PE',
+    'usa': 'US'
+  };
+  
+  const countryCode = countryCodeMap[country.toLowerCase()] || 'AR';
+  const countryId = await getCountryId(countryCode);
+  
+  // Insert recipe with new schema (description, prep_time, cook_time, country_id, servings)
+  const servings = (recipe as any).servings ?? null;
+  const description = recipe.instructions.length > 0 ? recipe.instructions[0] : recipe.title;
+  const prepTime = 15; // Default values
+  const cookTime = 30;
+  
   const recipeResult = await query<{ id: number }>(
-    `INSERT INTO recipes (title, instructions, difficulty, language, country) 
-     VALUES ($1, $2::jsonb, $3, $4, $5) 
+    `INSERT INTO recipes (title, description, difficulty, prep_time, cook_time, country_id, servings) 
+     VALUES ($1, $2, $3, $4, $5, $6, $7) 
      RETURNING id`,
-    [recipe.title, JSON.stringify(recipe.instructions), recipe.difficulty, language, country]
+    [recipe.title, description, recipe.difficulty, prepTime, cookTime, countryId, servings]
   );
 
   const recipeId = recipeResult[0].id;
 
-  // Insert ingredients and relationships
-  for (const ingredientName of recipe.ingredients) {
-    const ingredientId = await getOrCreateIngredient(ingredientName);
+  // Insert instructions into separate table
+  for (let i = 0; i < recipe.instructions.length; i++) {
+    const instruction = String(recipe.instructions[i] || '').trim();
+    if (!instruction) continue; // Skip empty instructions
     
     await execute(
-      `INSERT INTO recipe_ingredients (recipe_id, ingredient_id) 
-       VALUES ($1, $2) 
-       ON CONFLICT DO NOTHING`,
-      [recipeId, ingredientId]
+      `INSERT INTO instructions (recipe_id, step_number, instruction) 
+       VALUES ($1, $2, $3)`,
+      [recipeId, i + 1, instruction]
+    );
+  }
+
+  // Insert ingredients and relationships
+  for (const ingredientName of recipe.ingredients) {
+    // Ensure ingredient is a string
+    const ingredientStr = String(ingredientName || '').trim();
+    if (!ingredientStr) continue; // Skip empty ingredients
+    
+    const ingredientId = await getOrCreateIngredient(ingredientStr);
+    
+    // Truncate quantity to 150 characters (database limit)
+    const quantity = ingredientStr.substring(0, 150);
+    
+    await execute(
+      `INSERT INTO recipe_ingredients (recipe_id, ingredient_id, quantity) 
+       VALUES ($1, $2, $3) 
+       ON CONFLICT (recipe_id, ingredient_id) DO NOTHING`,
+      [recipeId, ingredientId, quantity]
     );
   }
 
@@ -170,7 +232,7 @@ export async function seedRecipes(log: LogFunction = console.log, targetRecipes:
         const validatedRecipe = validateRecipeData(generatedRecipe);
         
         // Insert into database
-        const recipeId = await insertRecipe(validatedRecipe, validatedRecipe.language, validatedRecipe.country);
+        const recipeId = await insertRecipe(validatedRecipe, 'es', randomCountry);
         
         successCount++;
         log(`✓ Recipe ${recipeNum}/${recipesToGenerate}: "${validatedRecipe.title}" [${randomCountry.toUpperCase()}] (ID: ${recipeId})`);
@@ -203,7 +265,8 @@ export async function seedRecipes(log: LogFunction = console.log, targetRecipes:
 
 async function main() {
   try {
-    await initializeSchema();
+    // Skip schema initialization - tables already exist in Neon
+    // await initializeSchema();
     await seedRecipes();
     process.exit(0);
   } catch (error) {

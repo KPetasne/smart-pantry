@@ -12,7 +12,7 @@ if (!connectionString) {
 
 const pool = new Pool({
   connectionString,
-  ssl: false,
+  ssl: connectionString.includes('sslmode=require') ? { rejectUnauthorized: false } : false,
   client_encoding: 'UTF8',
 });
 

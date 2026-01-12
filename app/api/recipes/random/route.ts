@@ -7,16 +7,19 @@ export async function GET() {
     const recipes = await query<{
       id: number;
       title: string;
-      instructions: any;
+      description: string;
+      prep_time: number;
+      cook_time: number;
       difficulty: string;
       servings: number | null;
-      language: string;
-      country: string;
+      country_name: string;
+      country_code: string;
       created_at: Date;
     }>(
-      `SELECT id, title, instructions, difficulty, servings, language, country, created_at 
-       FROM recipes 
-       WHERE language = 'es'
+      `SELECT r.id, r.title, r.description, r.prep_time, r.cook_time, r.difficulty, r.servings, 
+              c.name as country_name, c.code as country_code, r.created_at 
+       FROM recipes r
+       INNER JOIN countries c ON r.country_id = c.id
        ORDER BY RANDOM() 
        LIMIT 1`
     );
@@ -30,9 +33,18 @@ export async function GET() {
 
     const recipe = recipes[0];
 
+    // Get instructions for this recipe
+    const instructions = await query<{ instruction: string }>(
+      `SELECT instruction
+       FROM instructions
+       WHERE recipe_id = $1
+       ORDER BY step_number`,
+      [recipe.id]
+    );
+
     // Get ingredients for this recipe
-    const ingredients = await query<{ name: string }>(
-      `SELECT i.name 
+    const ingredients = await query<{ name: string; quantity: string }>(
+      `SELECT i.name, ri.quantity
        FROM ingredients i
        INNER JOIN recipe_ingredients ri ON i.id = ri.ingredient_id
        WHERE ri.recipe_id = $1
@@ -44,11 +56,14 @@ export async function GET() {
       {
         id: recipe.id,
         title: recipe.title,
-        ingredients: ingredients.map(ing => ing.name),
-        instructions: recipe.instructions,
+        description: recipe.description,
+        prepTime: recipe.prep_time,
+        cookTime: recipe.cook_time,
+        ingredients: ingredients.map(ing => ing.quantity || ing.name),
+        instructions: instructions.map(i => i.instruction),
         difficulty: recipe.difficulty,
         servings: recipe.servings ?? undefined,
-        country: recipe.country,
+        country: recipe.country_code.toLowerCase(),
         created_at: recipe.created_at,
       },
       {

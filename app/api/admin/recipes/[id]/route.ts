@@ -6,12 +6,14 @@ import { validateRecipeData } from '@/lib/recipe-normalizer';
 
 const recipeSchema = z.object({
   title: z.string().min(1).max(255),
+  description: z.string().min(1).max(500).optional(),
+  prepTime: z.number().int().min(1).max(480).optional(),
+  cookTime: z.number().int().min(1).max(480).optional(),
   ingredients: z.array(z.string().min(1)).min(1),
   instructions: z.array(z.string().min(1)).min(1),
   difficulty: z.enum(['easy', 'medium', 'hard']),
   servings: z.number().int().min(1).max(12).optional(),
-  language: z.string().length(2).default('es'),
-  country: z.string().min(1).max(50).default('argentina'),
+  country: z.string().length(2).optional(),
 });
 
 // GET - Get single recipe by ID
@@ -37,14 +39,20 @@ export async function GET(
     const recipes = await query<{
       id: number;
       title: string;
-      instructions: any;
+      description: string;
+      prep_time: number;
+      cook_time: number;
       difficulty: string;
       servings: number | null;
-      language: string;
-      country: string;
+      country_code: string;
+      country_name: string;
       created_at: Date;
     }>(
-      'SELECT id, title, instructions, difficulty, servings, language, country, created_at FROM recipes WHERE id = $1',
+      `SELECT r.id, r.title, r.description, r.prep_time, r.cook_time, r.difficulty, r.servings,
+              c.code as country_code, c.name as country_name, r.created_at 
+       FROM recipes r
+       INNER JOIN countries c ON r.country_id = c.id
+       WHERE r.id = $1`,
       [recipeId]
     );
 
@@ -54,9 +62,18 @@ export async function GET(
 
     const recipe = recipes[0];
 
+    // Get instructions
+    const instructions = await query<{ instruction: string }>(
+      `SELECT instruction
+       FROM instructions
+       WHERE recipe_id = $1
+       ORDER BY step_number`,
+      [recipeId]
+    );
+
     // Get ingredients
-    const ingredients = await query<{ name: string }>(
-      `SELECT i.name 
+    const ingredients = await query<{ name: string; quantity: string }>(
+      `SELECT i.name, ri.quantity
        FROM ingredients i
        INNER JOIN recipe_ingredients ri ON i.id = ri.ingredient_id
        WHERE ri.recipe_id = $1
@@ -67,16 +84,15 @@ export async function GET(
     return NextResponse.json({
       id: recipe.id,
       title: recipe.title,
-      ingredients: ingredients.map(ing => ing.name),
-      instructions: Array.isArray(recipe.instructions) 
-        ? recipe.instructions 
-        : typeof recipe.instructions === 'string' 
-          ? JSON.parse(recipe.instructions) 
-          : [],
+      description: recipe.description,
+      prepTime: recipe.prep_time,
+      cookTime: recipe.cook_time,
+      ingredients: ingredients.map(ing => ing.quantity || ing.name),
+      instructions: instructions.map(i => i.instruction),
       difficulty: recipe.difficulty,
       servings: recipe.servings,
-      language: recipe.language,
-      country: recipe.country,
+      country: recipe.country_code,
+      countryName: recipe.country_name,
       created_at: recipe.created_at,
     });
   } catch (error) {
@@ -114,21 +130,47 @@ export async function PUT(
       return NextResponse.json({ error: 'Recipe not found' }, { status: 404 });
     }
 
+    // Get country_id
+    const countryCode = validatedData.country || 'AR';
+    const countryResult = await query<{ id: number }>(
+      'SELECT id FROM countries WHERE code = $1',
+      [countryCode.toUpperCase()]
+    );
+    
+    if (countryResult.length === 0) {
+      return NextResponse.json({ error: 'Invalid country code' }, { status: 400 });
+    }
+    
+    const countryId = countryResult[0].id;
+
     // Update recipe
     await execute(
       `UPDATE recipes 
-       SET title = $1, instructions = $2::jsonb, difficulty = $3, servings = $4, language = $5, country = $6 
-       WHERE id = $7`,
+       SET title = $1, description = $2, prep_time = $3, cook_time = $4, difficulty = $5, servings = $6, country_id = $7, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $8`,
       [
         recipe.title,
-        JSON.stringify(recipe.instructions),
+        recipe.description,
+        recipe.prepTime,
+        recipe.cookTime,
         recipe.difficulty,
         recipe.servings ?? null,
-        recipe.language,
-        recipe.country,
+        countryId,
         recipeId,
       ]
     );
+
+    // Delete existing instructions
+    await execute('DELETE FROM instructions WHERE recipe_id = $1', [recipeId]);
+
+    // Insert new instructions
+    for (let i = 0; i < recipe.instructions.length; i++) {
+      await execute(
+        `INSERT INTO instructions (recipe_id, step_number, instruction) 
+         VALUES ($1, $2, $3)`,
+        [recipeId, i + 1, recipe.instructions[i]]
+      );
+    }
 
     // Delete existing ingredient relationships
     await execute('DELETE FROM recipe_ingredients WHERE recipe_id = $1', [recipeId]);
@@ -137,20 +179,29 @@ export async function PUT(
     for (const ingredientName of recipe.ingredients) {
       const normalized = ingredientName.trim().toLowerCase();
       
-      const ingredientResult = await query<{ id: number }>(
-        `INSERT INTO ingredients (name) 
-         VALUES ($1) 
-         ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name 
-         RETURNING id`,
-        [normalized]
-      );
-
-      const ingredientId = ingredientResult[0].id;
+      let ingredientId: number;
+      try {
+        const ingredientResult = await query<{ id: number }>(
+          'INSERT INTO ingredients (name) VALUES ($1) RETURNING id',
+          [normalized]
+        );
+        ingredientId = ingredientResult[0].id;
+      } catch (error: any) {
+        if (error.code === '23505') {
+          const existing = await query<{ id: number }>(
+            'SELECT id FROM ingredients WHERE name = $1',
+            [normalized]
+          );
+          ingredientId = existing[0].id;
+        } else {
+          throw error;
+        }
+      }
 
       await execute(
-        `INSERT INTO recipe_ingredients (recipe_id, ingredient_id) 
-         VALUES ($1, $2)`,
-        [recipeId, ingredientId]
+        `INSERT INTO recipe_ingredients (recipe_id, ingredient_id, quantity) 
+         VALUES ($1, $2, $3)`,
+        [recipeId, ingredientId, ingredientName.substring(0, 150)]
       );
     }
 
@@ -196,7 +247,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Recipe not found' }, { status: 404 });
     }
 
-    // Delete recipe (CASCADE will handle recipe_ingredients)
+    // Delete recipe (CASCADE will handle recipe_ingredients and instructions)
     await execute('DELETE FROM recipes WHERE id = $1', [recipeId]);
 
     return NextResponse.json({

@@ -7,12 +7,14 @@ import { validateRecipeData } from '@/lib/recipe-normalizer';
 // Schema for creating/updating recipes
 const recipeSchema = z.object({
   title: z.string().min(1).max(255),
+  description: z.string().min(1).max(500).optional(),
+  prepTime: z.number().int().min(1).max(480).optional(),
+  cookTime: z.number().int().min(1).max(480).optional(),
   ingredients: z.array(z.string().min(1)).min(1),
   instructions: z.array(z.string().min(1)).min(1),
   difficulty: z.enum(['easy', 'medium', 'hard']),
   servings: z.number().int().min(1).max(12).optional(),
-  language: z.string().length(2).default('es'),
-  country: z.string().min(1).max(50).default('argentina'),
+  country: z.string().length(2).optional(), // Country code (AR, MX, etc)
 });
 
 // GET - List recipes with pagination
@@ -39,21 +41,37 @@ export async function GET(request: Request) {
     const recipes = await query<{
       id: number;
       title: string;
+      description: string;
+      prep_time: number;
+      cook_time: number;
       difficulty: string;
       servings: number | null;
-      language: string;
-      country: string;
+      country_code: string;
+      country_name: string;
       created_at: Date;
     }>(
-      `SELECT id, title, difficulty, servings, language, country, created_at 
-       FROM recipes 
-       ORDER BY created_at DESC 
+      `SELECT r.id, r.title, r.description, r.prep_time, r.cook_time, r.difficulty, r.servings, 
+              c.code as country_code, c.name as country_name, r.created_at 
+       FROM recipes r
+       INNER JOIN countries c ON r.country_id = c.id
+       ORDER BY r.created_at DESC 
        LIMIT $1 OFFSET $2`,
       [limit, offset]
     );
 
     return NextResponse.json({
-      recipes,
+      recipes: recipes.map(r => ({
+        id: r.id,
+        title: r.title,
+        description: r.description,
+        prepTime: r.prep_time,
+        cookTime: r.cook_time,
+        difficulty: r.difficulty,
+        servings: r.servings ?? undefined,
+        country: r.country_code,
+        countryName: r.country_name,
+        created_at: r.created_at,
+      })),
       pagination: {
         page,
         limit,
@@ -80,44 +98,76 @@ export async function POST(request: Request) {
     const validatedData = recipeSchema.parse(body);
     const recipe = validateRecipeData(validatedData);
 
+    // Get country_id (default to Argentina if not provided)
+    const countryCode = validatedData.country || 'AR';
+    const countryResult = await query<{ id: number }>(
+      'SELECT id FROM countries WHERE code = $1',
+      [countryCode.toUpperCase()]
+    );
+    
+    if (countryResult.length === 0) {
+      return NextResponse.json({ error: 'Invalid country code' }, { status: 400 });
+    }
+    
+    const countryId = countryResult[0].id;
+
     // Insert recipe
     const recipeResult = await query<{ id: number }>(
-      `INSERT INTO recipes (title, instructions, difficulty, servings, language, country) 
-       VALUES ($1, $2::jsonb, $3, $4, $5, $6) 
+      `INSERT INTO recipes (title, description, prep_time, cook_time, difficulty, servings, country_id) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7) 
        RETURNING id`,
       [
         recipe.title,
-        JSON.stringify(recipe.instructions),
+        recipe.description,
+        recipe.prepTime,
+        recipe.cookTime,
         recipe.difficulty,
         recipe.servings ?? null,
-        recipe.language,
-        recipe.country,
+        countryId,
       ]
     );
 
     const recipeId = recipeResult[0].id;
+
+    // Insert instructions
+    for (let i = 0; i < recipe.instructions.length; i++) {
+      await execute(
+        `INSERT INTO instructions (recipe_id, step_number, instruction) 
+         VALUES ($1, $2, $3)`,
+        [recipeId, i + 1, recipe.instructions[i]]
+      );
+    }
 
     // Insert ingredients and relationships
     for (const ingredientName of recipe.ingredients) {
       const normalized = ingredientName.trim().toLowerCase();
       
       // Get or create ingredient
-      const ingredientResult = await query<{ id: number }>(
-        `INSERT INTO ingredients (name) 
-         VALUES ($1) 
-         ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name 
-         RETURNING id`,
-        [normalized]
-      );
-
-      const ingredientId = ingredientResult[0].id;
+      let ingredientId: number;
+      try {
+        const ingredientResult = await query<{ id: number }>(
+          'INSERT INTO ingredients (name) VALUES ($1) RETURNING id',
+          [normalized]
+        );
+        ingredientId = ingredientResult[0].id;
+      } catch (error: any) {
+        if (error.code === '23505') {
+          const existing = await query<{ id: number }>(
+            'SELECT id FROM ingredients WHERE name = $1',
+            [normalized]
+          );
+          ingredientId = existing[0].id;
+        } else {
+          throw error;
+        }
+      }
 
       // Create relationship
       await execute(
-        `INSERT INTO recipe_ingredients (recipe_id, ingredient_id) 
-         VALUES ($1, $2) 
-         ON CONFLICT DO NOTHING`,
-        [recipeId, ingredientId]
+        `INSERT INTO recipe_ingredients (recipe_id, ingredient_id, quantity) 
+         VALUES ($1, $2, $3) 
+         ON CONFLICT (recipe_id, ingredient_id) DO NOTHING`,
+        [recipeId, ingredientId, ingredientName.substring(0, 150)]
       );
     }
 

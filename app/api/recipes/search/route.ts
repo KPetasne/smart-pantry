@@ -30,27 +30,34 @@ export async function POST(request: Request) {
     const matchingRecipes = await query<{
       recipe_id: number;
       title: string;
-      instructions: any;
+      description: string;
+      prep_time: number;
+      cook_time: number;
       difficulty: string;
       servings: number | null;
-      language: string;
+      country_name: string;
+      country_code: string;
       created_at: Date;
       match_count: number;
     }>(
       `SELECT 
         r.id as recipe_id,
         r.title,
-        r.instructions,
+        r.description,
+        r.prep_time,
+        r.cook_time,
         r.difficulty,
         r.servings,
-        r.language,
+        c.name as country_name,
+        c.code as country_code,
         r.created_at,
         COUNT(ri.ingredient_id) as match_count
       FROM recipes r
       INNER JOIN recipe_ingredients ri ON r.id = ri.recipe_id
       INNER JOIN ingredients i ON ri.ingredient_id = i.id
-      WHERE i.name = ANY($1::text[]) AND r.language = 'es'
-      GROUP BY r.id, r.title, r.instructions, r.difficulty, r.servings, r.language, r.created_at
+      INNER JOIN countries c ON r.country_id = c.id
+      WHERE i.name = ANY($1::text[])
+      GROUP BY r.id, r.title, r.description, r.prep_time, r.cook_time, r.difficulty, r.servings, c.name, c.code, r.created_at
       HAVING COUNT(DISTINCT i.name) = $2
       ORDER BY r.created_at DESC
       LIMIT 1`,
@@ -61,9 +68,18 @@ export async function POST(request: Request) {
     if (matchingRecipes.length > 0) {
       const recipe = matchingRecipes[0];
 
+      // Get instructions for this recipe
+      const instructions = await query<{ instruction: string }>(
+        `SELECT instruction
+         FROM instructions
+         WHERE recipe_id = $1
+         ORDER BY step_number`,
+        [recipe.recipe_id]
+      );
+
       // Get all ingredients for this recipe
-      const recipeIngredients = await query<{ name: string }>(
-        `SELECT i.name 
+      const recipeIngredients = await query<{ name: string; quantity: string }>(
+        `SELECT i.name, ri.quantity
          FROM ingredients i
          INNER JOIN recipe_ingredients ri ON i.id = ri.ingredient_id
          WHERE ri.recipe_id = $1
@@ -79,10 +95,14 @@ export async function POST(request: Request) {
       return NextResponse.json({
         id: recipe.recipe_id,
         title: recipe.title,
-        ingredients: recipeIngredients.map(ing => ing.name),
-        instructions: recipe.instructions,
+        description: recipe.description,
+        prepTime: recipe.prep_time,
+        cookTime: recipe.cook_time,
+        ingredients: recipeIngredients.map(ing => ing.quantity || ing.name),
+        instructions: instructions.map(i => i.instruction),
         difficulty: recipe.difficulty,
         servings: recipe.servings ?? undefined,
+        country: recipe.country_code.toLowerCase(),
         created_at: recipe.created_at,
         fromCache: true,
       });
@@ -93,36 +113,71 @@ export async function POST(request: Request) {
     const generatedRecipe = await geminiService.generateRecipe(normalizedIngredients, 'argentina', 'es');
     const validatedRecipe = validateRecipeData(generatedRecipe);
 
+    // Get country_id for Argentina
+    const countryResult = await query<{ id: number }>(
+      'SELECT id FROM countries WHERE code = $1',
+      ['AR']
+    );
+    const countryId = countryResult[0].id;
+
     // Insert into database using transaction
     // First, insert the recipe
     const recipeResult = await query<{ id: number }>(
-      `INSERT INTO recipes (title, instructions, difficulty, servings, language, country) 
-       VALUES ($1, $2::jsonb, $3, $4, $5, $6) 
+      `INSERT INTO recipes (title, description, difficulty, prep_time, cook_time, country_id, servings) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7) 
        RETURNING id`,
-      [validatedRecipe.title, JSON.stringify(validatedRecipe.instructions), validatedRecipe.difficulty, validatedRecipe.servings ?? null, validatedRecipe.language, validatedRecipe.country]
+      [
+        validatedRecipe.title,
+        validatedRecipe.description,
+        validatedRecipe.difficulty,
+        validatedRecipe.prepTime,
+        validatedRecipe.cookTime,
+        countryId,
+        validatedRecipe.servings ?? null
+      ]
     );
 
     const recipeId = recipeResult[0].id;
 
+    // Insert instructions
+    for (let i = 0; i < validatedRecipe.instructions.length; i++) {
+      await execute(
+        `INSERT INTO instructions (recipe_id, step_number, instruction) 
+         VALUES ($1, $2, $3)`,
+        [recipeId, i + 1, validatedRecipe.instructions[i]]
+      );
+    }
+
     // Then, insert ingredients and relationships
     for (const ingredientName of validatedRecipe.ingredients) {
       // Get or create ingredient
-      const ingredientResult = await query<{ id: number }>(
-        `INSERT INTO ingredients (name) 
-         VALUES ($1) 
-         ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name 
-         RETURNING id`,
-        [ingredientName.trim().toLowerCase()]
-      );
+      const normalizedName = ingredientName.trim().toLowerCase();
+      
+      let ingredientId: number;
+      try {
+        const ingredientResult = await query<{ id: number }>(
+          `INSERT INTO ingredients (name) VALUES ($1) RETURNING id`,
+          [normalizedName]
+        );
+        ingredientId = ingredientResult[0].id;
+      } catch (error: any) {
+        if (error.code === '23505') {
+          const existing = await query<{ id: number }>(
+            'SELECT id FROM ingredients WHERE name = $1',
+            [normalizedName]
+          );
+          ingredientId = existing[0].id;
+        } else {
+          throw error;
+        }
+      }
 
-      const ingredientId = ingredientResult[0].id;
-
-      // Create relationship
+      // Create relationship with quantity
       await execute(
-        `INSERT INTO recipe_ingredients (recipe_id, ingredient_id) 
-         VALUES ($1, $2) 
-         ON CONFLICT DO NOTHING`,
-        [recipeId, ingredientId]
+        `INSERT INTO recipe_ingredients (recipe_id, ingredient_id, quantity) 
+         VALUES ($1, $2, $3) 
+         ON CONFLICT (recipe_id, ingredient_id) DO NOTHING`,
+        [recipeId, ingredientId, ingredientName.substring(0, 150)]
       );
     }
 
@@ -134,10 +189,14 @@ export async function POST(request: Request) {
     return NextResponse.json({
       id: recipeId,
       title: validatedRecipe.title,
+      description: validatedRecipe.description,
+      prepTime: validatedRecipe.prepTime,
+      cookTime: validatedRecipe.cookTime,
       ingredients: validatedRecipe.ingredients,
       instructions: validatedRecipe.instructions,
       difficulty: validatedRecipe.difficulty,
       servings: validatedRecipe.servings,
+      country: 'argentina',
       created_at: new Date(),
       fromCache: false,
     });

@@ -6,6 +6,9 @@ Platos italianos: Pasta carbonara, Risotto, Pizza margherita, Lasagna, Osso buco
 Devuelve SOLO JSON:
 {
   "title": "Nombre del plato",
+  "description": "Descripción breve del plato (1-2 líneas)",
+  "prepTime": 15,
+  "cookTime": 30,
   "ingredients": ["200g pasta", ...],
   "instructions": ["paso1", ...],
   "difficulty": "easy" | "medium" | "hard",
@@ -18,6 +21,9 @@ Platos: Spaghetti carbonara, Risotto ai funghi, Pizza napoletana, Lasagna, Osso 
 Devuelve SOLO JSON:
 {
   "title": "Nombre",
+  "description": "Descripción breve del plato (1-2 líneas)",
+  "prepTime": 15,
+  "cookTime": 30,
   "ingredients": [...],
   "instructions": [...],
   "difficulty": "easy" | "medium" | "hard",

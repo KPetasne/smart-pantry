@@ -5,6 +5,9 @@ import RecipeCard from './RecipeCard';
 interface Recipe {
   id: number;
   title: string;
+  description?: string;
+  prepTime?: number;
+  cookTime?: number;
   ingredients: string[];
   instructions: string[];
   difficulty: 'easy' | 'medium' | 'hard';
@@ -42,6 +45,8 @@ export default function RecipeResults({ recipes, loading }: RecipeResultsProps) 
           <RecipeCard
             id={recipe.id}
             title={recipe.title}
+            description={recipe.description}
+            prepTime={recipe.prepTime}
             ingredients={recipe.ingredients}
             difficulty={recipe.difficulty}
             servings={recipe.servings}

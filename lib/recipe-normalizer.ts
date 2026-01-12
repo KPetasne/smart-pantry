@@ -25,12 +25,16 @@ export function normalizeIngredients(ingredients: string[]): string[] {
  */
 export interface RecipeData {
   title: string;
+  description: string;
+  prepTime: number;
+  cookTime: number;
   ingredients: string[];
   instructions: string[];
   difficulty: 'easy' | 'medium' | 'hard';
   servings?: number;
-  language: string;
-  country: string;
+  countryId?: number; // For database operations
+  language?: string; // Legacy field, not used in new schema
+  country?: string; // Legacy field, not used in new schema
 }
 
 export function validateRecipeData(data: any): RecipeData {
@@ -59,13 +63,22 @@ export function validateRecipeData(data: any): RecipeData {
     }
   }
 
+  // Default values for new fields
+  const description = data.description || data.title;
+  const prepTime = typeof data.prepTime === 'number' ? data.prepTime : 15;
+  const cookTime = typeof data.cookTime === 'number' ? data.cookTime : 30;
+
   return {
     title: data.title.trim(),
+    description: description.trim(),
+    prepTime,
+    cookTime,
     ingredients: normalizeIngredients(data.ingredients),
     instructions: data.instructions.map((inst: string) => inst.trim()).filter((inst: string) => inst.length > 0),
     difficulty: data.difficulty,
     ...(data.servings !== undefined && data.servings !== null && { servings: typeof data.servings === 'number' ? data.servings : parseInt(data.servings, 10) }),
-    language: data.language || 'es',
-    country: data.country || 'argentina',
+    ...(data.countryId !== undefined && { countryId: data.countryId }),
+    ...(data.language && { language: data.language }),
+    ...(data.country && { country: data.country }),
   };
 }

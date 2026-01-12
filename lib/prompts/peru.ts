@@ -8,6 +8,9 @@ Usa: ají amarillo, ají panca, culantro, limón
 Devuelve SOLO JSON:
 {
   "title": "Nombre",
+  "description": "Descripción breve del plato (1-2 líneas)",
+  "prepTime": 15,
+  "cookTime": 30,
   "ingredients": ["500g pescado", ...],
   "instructions": [...],
   "difficulty": "easy" | "medium" | "hard",
@@ -20,6 +23,9 @@ Platos: Ceviche, Lomo saltado, Ají de gallina, Causa limeña, Anticuchos, Papa 
 Devuelve SOLO JSON:
 {
   "title": "Nombre",
+  "description": "Descripción breve del plato (1-2 líneas)",
+  "prepTime": 15,
+  "cookTime": 30,
   "ingredients": [...],
   "instructions": [...],
   "difficulty": "easy" | "medium" | "hard",

@@ -14,15 +14,14 @@ export async function POST(request: Request) {
     const { diet, difficulty, limit } = filterSchema.parse(body);
 
     let queryText = `
-      SELECT r.id, r.title, r.instructions, r.difficulty, r.servings, r.language, r.country, r.created_at
+      SELECT r.id, r.title, r.description, r.prep_time, r.cook_time, r.difficulty, r.servings, 
+             c.name as country_name, c.code as country_code, r.created_at
       FROM recipes r
+      INNER JOIN countries c ON r.country_id = c.id
     `;
     const params: any[] = [];
     let paramIndex = 1;
     const conditions: string[] = [];
-
-    // Always filter by language
-    conditions.push(`r.language = 'es'`);
 
     // Filter by difficulty if provided
     if (difficulty) {
@@ -73,19 +72,29 @@ export async function POST(request: Request) {
     const recipes = await query<{
       id: number;
       title: string;
-      instructions: any;
+      description: string;
+      prep_time: number;
+      cook_time: number;
       difficulty: string;
       servings: number | null;
-      language: string;
-      country: string;
+      country_name: string;
+      country_code: string;
       created_at: Date;
     }>(queryText, params);
 
-    // Get ingredients for each recipe
+    // Get ingredients and instructions for each recipe
     const recipesWithIngredients = await Promise.all(
       recipes.map(async (recipe) => {
-        const ingredients = await query<{ name: string }>(
-          `SELECT i.name 
+        const instructions = await query<{ instruction: string }>(
+          `SELECT instruction
+           FROM instructions
+           WHERE recipe_id = $1
+           ORDER BY step_number`,
+          [recipe.id]
+        );
+
+        const ingredients = await query<{ name: string; quantity: string }>(
+          `SELECT i.name, ri.quantity
            FROM ingredients i
            INNER JOIN recipe_ingredients ri ON i.id = ri.ingredient_id
            WHERE ri.recipe_id = $1
@@ -96,11 +105,14 @@ export async function POST(request: Request) {
         return {
           id: recipe.id,
           title: recipe.title,
-          ingredients: ingredients.map(ing => ing.name),
-          instructions: recipe.instructions,
+          description: recipe.description,
+          prepTime: recipe.prep_time,
+          cookTime: recipe.cook_time,
+          ingredients: ingredients.map(ing => ing.quantity || ing.name),
+          instructions: instructions.map(i => i.instruction),
           difficulty: recipe.difficulty,
           servings: recipe.servings ?? undefined,
-          country: recipe.country,
+          country: recipe.country_code.toLowerCase(),
           created_at: recipe.created_at,
         };
       })

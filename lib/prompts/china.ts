@@ -8,6 +8,9 @@ Usa: salsa de soja, jengibre, ajo, aceite de sésamo
 Devuelve SOLO JSON:
 {
   "title": "Nombre",
+  "description": "Descripción breve del plato (1-2 líneas)",
+  "prepTime": 15,
+  "cookTime": 30,
   "ingredients": ["300g pollo", ...],
   "instructions": [...],
   "difficulty": "easy" | "medium" | "hard",
@@ -20,6 +23,9 @@ Platos: Chow mein, Kung pao chicken, Arroz frito, Dumplings, Mapo tofu, Spring r
 Devuelve SOLO JSON:
 {
   "title": "Nombre",
+  "description": "Descripción breve del plato (1-2 líneas)",
+  "prepTime": 15,
+  "cookTime": 30,
   "ingredients": [...],
   "instructions": [...],
   "difficulty": "easy" | "medium" | "hard",

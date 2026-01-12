@@ -20,6 +20,9 @@ Platos: Paella, Tortilla de patatas, Gazpacho, Cocido madrileño, Croquetas, Pul
 Devuelve SOLO JSON:
 {
   "title": "Nombre del plato",
+  "description": "Descripción breve del plato (1-2 líneas)",
+  "prepTime": 15,
+  "cookTime": 30,
   "ingredients": ["ingrediente1", ...],
   "instructions": ["paso1", ...],
   "difficulty": "easy" | "medium" | "hard",
