@@ -7,6 +7,7 @@ interface Recipe {
   id: number;
   title: string;
   prepTime?: number;
+  cookTime?: number;
   ingredients: string[];
   difficulty: 'easy' | 'medium' | 'hard';
   servings?: number;
@@ -19,7 +20,8 @@ interface RecipeCardProps extends Recipe {}
 export default function RecipeCard({ 
   id, 
   title, 
-  prepTime, 
+  prepTime,
+  cookTime, 
   ingredients, 
   difficulty, 
   servings,
@@ -28,20 +30,20 @@ export default function RecipeCard({
 }: RecipeCardProps) {
   return (
     <Link href={`/recipes/${id}`} className="block mb-6 last:mb-0">
-      <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer">
-        <h3 className="text-xl font-bold mb-2 text-gray-800">{title}</h3>
+      <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer border border-carbon/10">
+        <h3 className="text-xl font-bold mb-2 text-carbon">{title}</h3>
         <div className="mb-3 flex flex-wrap items-center gap-3">
           <DifficultyBadge difficulty={difficulty} />
           {servings && (
-            <div className="flex items-center gap-1 text-gray-600">
+            <div className="flex items-center gap-1 text-carbon/70">
               <UserGroupIcon className="w-4 h-4" />
               <span className="text-sm font-medium">{servings}</span>
             </div>
           )}
-          {prepTime && (
-            <div className="flex items-center gap-1 text-gray-600">
+          {(prepTime || cookTime) && (
+            <div className="flex items-center gap-1 text-carbon/70">
               <ClockIcon className="w-4 h-4" />
-              <span className="text-sm font-medium">{prepTime} min</span>
+              <span className="text-sm font-medium">{(prepTime || 0) + (cookTime || 0)} min</span>
             </div>
           )}
           <RatingStars 

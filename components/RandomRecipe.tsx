@@ -6,6 +6,8 @@ import RecipeCard from './RecipeCard';
 interface Recipe {
   id: number;
   title: string;
+  prepTime?: number;
+  cookTime?: number;
   ingredients: string[];
   instructions: string[];
   difficulty: 'easy' | 'medium' | 'hard';
@@ -46,7 +48,7 @@ export default function RandomRecipe() {
   if (loading) {
     return (
       <div className="flex justify-center items-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-terracota"></div>
       </div>
     );
   }
@@ -74,6 +76,8 @@ export default function RandomRecipe() {
       <RecipeCard
         id={recipe.id}
         title={recipe.title}
+        prepTime={recipe.prepTime}
+        cookTime={recipe.cookTime}
         ingredients={recipe.ingredients}
         difficulty={recipe.difficulty}
         servings={recipe.servings}
@@ -81,7 +85,7 @@ export default function RandomRecipe() {
       <div className="mt-4 text-center">
         <button
           onClick={fetchRandomRecipe}
-          className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold"
+          className="px-6 py-3 bg-terracota text-white rounded-lg hover:bg-terracota/90 transition-colors font-semibold"
         >
           Otra opción
         </button>

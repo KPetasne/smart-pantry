@@ -24,14 +24,14 @@ export default function RecipeResults({ recipes, loading }: RecipeResultsProps) 
   if (loading) {
     return (
       <div className="flex justify-center items-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-terracota"></div>
       </div>
     );
   }
 
   if (recipes.length === 0) {
     return (
-      <div className="text-center py-12 text-gray-600">
+      <div className="text-center py-12 text-carbon/70">
         <p>No se encontraron recetas. Intenta con otros ingredientes.</p>
       </div>
     );
@@ -45,6 +45,7 @@ export default function RecipeResults({ recipes, loading }: RecipeResultsProps) 
             id={recipe.id}
             title={recipe.title}
             prepTime={recipe.prepTime}
+            cookTime={recipe.cookTime}
             ingredients={recipe.ingredients}
             difficulty={recipe.difficulty}
             servings={recipe.servings}

@@ -5,6 +5,8 @@ CREATE TABLE IF NOT EXISTS recipes (
   instructions JSONB NOT NULL,
   difficulty VARCHAR(20) CHECK (difficulty IN ('easy', 'medium', 'hard')) NOT NULL,
   servings INTEGER CHECK (servings >= 1 AND servings <= 12),
+  prep_time INTEGER,
+  cook_time INTEGER,
   language VARCHAR(5) DEFAULT 'es' NOT NULL,
   country VARCHAR(50) DEFAULT 'argentina' NOT NULL,
   rating_count INT DEFAULT 0,

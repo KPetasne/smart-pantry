@@ -3,7 +3,7 @@ import { query } from '@/lib/db';
 
 export async function GET() {
   try {
-    // Get a random recipe from the database
+    // Optimized query with JSON aggregation to avoid N+1 problem
     const recipes = await query<{
       id: number;
       title: string;
@@ -17,12 +17,41 @@ export async function GET() {
       country_name: string;
       country_code: string;
       created_at: Date;
+      instructions: Array<{ step: number; text: string }>;
+      ingredients: string[];
     }>(
-      `SELECT r.id, r.title, r.prep_time, r.cook_time, r.difficulty, r.servings, 
-              r.rating_count, r.rating_sum, r.average_rating,
-              c.name as country_name, c.code as country_code, r.created_at 
+      `SELECT 
+        r.id,
+        r.title,
+        r.prep_time,
+        r.cook_time,
+        r.difficulty,
+        r.servings,
+        r.rating_count,
+        r.rating_sum,
+        r.average_rating,
+        c.name as country_name,
+        c.code as country_code,
+        r.created_at,
+        COALESCE(
+          json_agg(
+            jsonb_build_object(
+              'step', i.step_number,
+              'text', i.instruction
+            ) ORDER BY i.step_number
+          ) FILTER (WHERE i.id IS NOT NULL),
+          '[]'
+        ) as instructions,
+        COALESCE(
+          array_agg(DISTINCT ri.quantity) FILTER (WHERE ri.recipe_id IS NOT NULL),
+          ARRAY[]::text[]
+        ) as ingredients
        FROM recipes r
        INNER JOIN countries c ON r.country_id = c.id
+       LEFT JOIN instructions i ON r.id = i.recipe_id
+       LEFT JOIN recipe_ingredients ri ON r.id = ri.recipe_id
+       GROUP BY r.id, r.title, r.prep_time, r.cook_time, r.difficulty, r.servings,
+                r.rating_count, r.rating_sum, r.average_rating, c.name, c.code, r.created_at
        ORDER BY RANDOM() 
        LIMIT 1`
     );
@@ -36,33 +65,14 @@ export async function GET() {
 
     const recipe = recipes[0];
 
-    // Get instructions for this recipe
-    const instructions = await query<{ instruction: string }>(
-      `SELECT instruction
-       FROM instructions
-       WHERE recipe_id = $1
-       ORDER BY step_number`,
-      [recipe.id]
-    );
-
-    // Get ingredients for this recipe
-    const ingredients = await query<{ name: string; quantity: string }>(
-      `SELECT i.name, ri.quantity
-       FROM ingredients i
-       INNER JOIN recipe_ingredients ri ON i.id = ri.ingredient_id
-       WHERE ri.recipe_id = $1
-       ORDER BY i.name`,
-      [recipe.id]
-    );
-
     return NextResponse.json(
       {
         id: recipe.id,
         title: recipe.title,
         prepTime: recipe.prep_time,
         cookTime: recipe.cook_time,
-        ingredients: ingredients.map(ing => ing.quantity || ing.name),
-        instructions: instructions.map(i => i.instruction),
+        ingredients: recipe.ingredients,
+        instructions: recipe.instructions.map(i => i.text),
         difficulty: recipe.difficulty,
         servings: recipe.servings ?? undefined,
         rating_count: recipe.rating_count,

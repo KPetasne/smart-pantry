@@ -83,6 +83,41 @@ export async function POST(request: Request) {
     queryText += ` ORDER BY RANDOM() LIMIT $${paramIndex}`;
     params.push(limit);
 
+    // Optimized query with JSON aggregation to avoid N+1 problem
+    const baseQuery = `
+      SELECT 
+        base.id,
+        base.title,
+        base.prep_time,
+        base.cook_time,
+        base.difficulty,
+        base.servings,
+        base.rating_count,
+        base.rating_sum,
+        base.average_rating,
+        base.country_name,
+        base.country_code,
+        base.created_at,
+        COALESCE(
+          json_agg(
+            jsonb_build_object(
+              'step', i.step_number,
+              'text', i.instruction
+            ) ORDER BY i.step_number
+          ) FILTER (WHERE i.id IS NOT NULL),
+          '[]'
+        ) as instructions,
+        COALESCE(
+          array_agg(DISTINCT ri.quantity) FILTER (WHERE ri.recipe_id IS NOT NULL),
+          ARRAY[]::text[]
+        ) as ingredients
+      FROM (${queryText}) as base
+      LEFT JOIN instructions i ON base.id = i.recipe_id
+      LEFT JOIN recipe_ingredients ri ON base.id = ri.recipe_id
+      GROUP BY base.id, base.title, base.prep_time, base.cook_time, base.difficulty, base.servings,
+               base.rating_count, base.rating_sum, base.average_rating, base.country_name, base.country_code, base.created_at
+    `;
+
     const recipes = await query<{
       id: number;
       title: string;
@@ -96,47 +131,28 @@ export async function POST(request: Request) {
       country_name: string;
       country_code: string;
       created_at: Date;
-    }>(queryText, params);
+      instructions: Array<{ step: number; text: string }>;
+      ingredients: string[];
+    }>(baseQuery, params);
 
-    // Get ingredients and instructions for each recipe
-    const recipesWithIngredients = await Promise.all(
-      recipes.map(async (recipe) => {
-        const instructions = await query<{ instruction: string }>(
-          `SELECT instruction
-           FROM instructions
-           WHERE recipe_id = $1
-           ORDER BY step_number`,
-          [recipe.id]
-        );
+    // Transform the aggregated data
+    const recipesWithDetails = recipes.map(recipe => ({
+      id: recipe.id,
+      title: recipe.title,
+      prepTime: recipe.prep_time,
+      cookTime: recipe.cook_time,
+      ingredients: recipe.ingredients,
+      instructions: recipe.instructions.map(i => i.text),
+      difficulty: recipe.difficulty,
+      servings: recipe.servings ?? undefined,
+      rating_count: recipe.rating_count,
+      rating_sum: recipe.rating_sum,
+      average_rating: recipe.average_rating,
+      country: recipe.country_code.toLowerCase(),
+      created_at: recipe.created_at,
+    }));
 
-        const ingredients = await query<{ name: string; quantity: string }>(
-          `SELECT i.name, ri.quantity
-           FROM ingredients i
-           INNER JOIN recipe_ingredients ri ON i.id = ri.ingredient_id
-           WHERE ri.recipe_id = $1
-           ORDER BY i.name`,
-          [recipe.id]
-        );
-
-        return {
-          id: recipe.id,
-          title: recipe.title,
-          prepTime: recipe.prep_time,
-          cookTime: recipe.cook_time,
-          ingredients: ingredients.map(ing => ing.quantity || ing.name),
-          instructions: instructions.map(i => i.instruction),
-          difficulty: recipe.difficulty,
-          servings: recipe.servings ?? undefined,
-          rating_count: recipe.rating_count,
-          rating_sum: recipe.rating_sum,
-          average_rating: recipe.average_rating,
-          country: recipe.country_code.toLowerCase(),
-          created_at: recipe.created_at,
-        };
-      })
-    );
-
-    return NextResponse.json(recipesWithIngredients);
+    return NextResponse.json(recipesWithDetails);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

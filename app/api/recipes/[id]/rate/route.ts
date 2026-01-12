@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { Pool } from 'pg';
+import { pool } from '@/lib/db';
 
 // Rate limiter for voting
 const rateLimitStore = new Map<string, number[]>();
@@ -29,13 +29,6 @@ function checkVoteRateLimit(ip: string): boolean {
 const ratingSchema = z.object({
   rating: z.number().int().min(1).max(5),
   sessionId: z.string().uuid(),
-});
-
-// Database connection
-const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL;
-const pool = new Pool({
-  connectionString,
-  ssl: connectionString?.includes('sslmode=require') ? { rejectUnauthorized: false } : false,
 });
 
 export async function POST(

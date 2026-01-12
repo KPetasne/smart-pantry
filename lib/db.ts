@@ -10,10 +10,14 @@ if (!connectionString) {
   );
 }
 
-const pool = new Pool({
+// Singleton pool instance - exported for direct use in transactions
+export const pool = new Pool({
   connectionString,
   ssl: connectionString.includes('sslmode=require') ? { rejectUnauthorized: false } : false,
   client_encoding: 'UTF8',
+  max: 20, // Maximum pool size
+  idleTimeoutMillis: 30000, // Close idle connections after 30 seconds
+  connectionTimeoutMillis: 10000, // Return error after 10 seconds
 });
 
 export interface Recipe {

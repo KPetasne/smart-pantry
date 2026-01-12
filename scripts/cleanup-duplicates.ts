@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { query, execute } from '../lib/db';
-import { areSimilar } from '../lib/string-similarity';
+import { areSimilar } from '@/lib/string-similarity';
 
 type LogFunction = (message: string) => void;
 

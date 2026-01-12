@@ -3,11 +3,13 @@ import { auth } from '@/auth';
 import { z } from 'zod';
 
 const scriptSchema = z.object({
-  action: z.enum(['seed', 'cleanup', 'cleanup-empty']),
+  action: z.enum(['seed', 'cleanup', 'cleanup-empty', 'create-user']),
   params: z.object({
     targetRecipes: z.number().int().positive().optional(),
     batchSize: z.number().int().positive().optional(),
     model: z.string().optional(),
+    username: z.string().optional(),
+    password: z.string().optional(),
   }).optional(),
 });
 
@@ -87,8 +89,8 @@ export async function GET(request: Request) {
 
 async function executeScript(
   executionId: string,
-  action: 'seed' | 'cleanup' | 'cleanup-empty',
-  params?: { targetRecipes?: number; batchSize?: number; model?: string }
+  action: 'seed' | 'cleanup' | 'cleanup-empty' | 'create-user',
+  params?: { targetRecipes?: number; batchSize?: number; model?: string; username?: string; password?: string }
 ) {
   const execution = activeExecutions.get(executionId);
   if (!execution) return;
@@ -127,10 +129,28 @@ async function executeScript(
       await removeEmptyRecipes(log);
       log('Cleanup empty recipes script completed successfully');
       execution.status = 'completed';
+    } else if (action === 'create-user') {
+      log('Creating admin user...');
+      const { username, password } = params || {};
+      if (!username || !password) {
+        throw new Error('Username and password are required');
+      }
+      const { createAdminUser } = await import('@/scripts/init-admin');
+      const result = await createAdminUser(username, password, log);
+      if (!result.success) {
+        throw new Error(result.message);
+      }
+      log('Admin user created successfully');
+      execution.status = 'completed';
     }
   } catch (error) {
     log(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     execution.status = 'error';
     throw error;
+  } finally {
+    // Cleanup execution logs after 1 hour to prevent memory leak
+    setTimeout(() => {
+      activeExecutions.delete(executionId);
+    }, 60 * 60 * 1000);
   }
 }

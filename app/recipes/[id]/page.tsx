@@ -84,9 +84,9 @@ export default async function RecipePage({ params }: PageProps) {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+    <main className="min-h-screen bg-gradient-to-b from-smoke to-white">
       <div className="container mx-auto px-4 py-8 md:py-12">
-        <Link href="/" className="text-blue-600 hover:text-blue-700 mb-6 inline-block">
+        <Link href="/" className="text-terracota hover:text-terracota/90 mb-6 inline-block">
           ← Volver al inicio
         </Link>
         <RecipeDetail recipe={recipe} />

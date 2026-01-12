@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { query, execute } from '@/lib/db';
+import { query, execute, pool } from '@/lib/db';
 import { z } from 'zod';
 import { validateRecipeData } from '@/lib/recipe-normalizer';
 
@@ -143,71 +143,84 @@ export async function PUT(
     
     const countryId = countryResult[0].id;
 
-    // Update recipe
-    await execute(
-      `UPDATE recipes 
-       SET title = $1, prep_time = $2, cook_time = $3, difficulty = $4, servings = $5, country_id = $6, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $7`,
-      [
-        recipe.title,
-        recipe.prepTime,
-        recipe.cookTime,
-        recipe.difficulty,
-        recipe.servings ?? null,
-        countryId,
-        recipeId,
-      ]
-    );
+    // Use transaction for all updates
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
 
-    // Delete existing instructions
-    await execute('DELETE FROM instructions WHERE recipe_id = $1', [recipeId]);
-
-    // Insert new instructions
-    for (let i = 0; i < recipe.instructions.length; i++) {
-      await execute(
-        `INSERT INTO instructions (recipe_id, step_number, instruction) 
-         VALUES ($1, $2, $3)`,
-        [recipeId, i + 1, recipe.instructions[i]]
+      // Update recipe
+      await client.query(
+        `UPDATE recipes 
+         SET title = $1, prep_time = $2, cook_time = $3, difficulty = $4, servings = $5, country_id = $6, updated_at = CURRENT_TIMESTAMP
+         WHERE id = $7`,
+        [
+          recipe.title,
+          recipe.prepTime,
+          recipe.cookTime,
+          recipe.difficulty,
+          recipe.servings ?? null,
+          countryId,
+          recipeId,
+        ]
       );
-    }
 
-    // Delete existing ingredient relationships
-    await execute('DELETE FROM recipe_ingredients WHERE recipe_id = $1', [recipeId]);
+      // Delete existing instructions
+      await client.query('DELETE FROM instructions WHERE recipe_id = $1', [recipeId]);
 
-    // Insert new ingredients and relationships
-    for (const ingredientName of recipe.ingredients) {
-      const normalized = ingredientName.trim().toLowerCase();
-      
-      let ingredientId: number;
-      try {
-        const ingredientResult = await query<{ id: number }>(
-          'INSERT INTO ingredients (name) VALUES ($1) RETURNING id',
-          [normalized]
+      // Insert new instructions
+      for (let i = 0; i < recipe.instructions.length; i++) {
+        await client.query(
+          `INSERT INTO instructions (recipe_id, step_number, instruction) 
+           VALUES ($1, $2, $3)`,
+          [recipeId, i + 1, recipe.instructions[i]]
         );
-        ingredientId = ingredientResult[0].id;
-      } catch (error: any) {
-        if (error.code === '23505') {
-          const existing = await query<{ id: number }>(
-            'SELECT id FROM ingredients WHERE name = $1',
-            [normalized]
-          );
-          ingredientId = existing[0].id;
-        } else {
-          throw error;
-        }
       }
 
-      await execute(
-        `INSERT INTO recipe_ingredients (recipe_id, ingredient_id, quantity) 
-         VALUES ($1, $2, $3)`,
-        [recipeId, ingredientId, ingredientName.substring(0, 150)]
-      );
-    }
+      // Delete existing ingredient relationships
+      await client.query('DELETE FROM recipe_ingredients WHERE recipe_id = $1', [recipeId]);
 
-    return NextResponse.json({
-      success: true,
-      message: 'Recipe updated successfully',
-    });
+      // Insert new ingredients and relationships
+      for (const ingredientName of recipe.ingredients) {
+        const normalized = ingredientName.trim().toLowerCase();
+        
+        let ingredientId: number;
+        try {
+          const ingredientResult = await client.query<{ id: number }>(
+            'INSERT INTO ingredients (name) VALUES ($1) RETURNING id',
+            [normalized]
+          );
+          ingredientId = ingredientResult.rows[0].id;
+        } catch (error: any) {
+          if (error.code === '23505') {
+            const existing = await client.query<{ id: number }>(
+              'SELECT id FROM ingredients WHERE name = $1',
+              [normalized]
+            );
+            ingredientId = existing.rows[0].id;
+          } else {
+            throw error;
+          }
+        }
+
+        await client.query(
+          `INSERT INTO recipe_ingredients (recipe_id, ingredient_id, quantity) 
+           VALUES ($1, $2, $3)`,
+          [recipeId, ingredientId, ingredientName.substring(0, 150)]
+        );
+      }
+
+      await client.query('COMMIT');
+
+      return NextResponse.json({
+        success: true,
+        message: 'Recipe updated successfully',
+      });
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

@@ -6,6 +6,8 @@ import RecipeCard from './RecipeCard';
 interface Recipe {
   id: number;
   title: string;
+  prepTime?: number;
+  cookTime?: number;
   ingredients: string[];
   instructions: string[];
   difficulty: 'easy' | 'medium' | 'hard';
@@ -61,18 +63,18 @@ export default function QuickFilters() {
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-2xl font-bold mb-4 text-gray-800">Filtros Rápidos</h2>
+        <h2 className="text-2xl font-bold mb-4 text-carbon">Filtros Rápidos</h2>
         
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Dieta</label>
+            <label className="block text-sm font-semibold text-carbon mb-2">Dieta</label>
             <div className="flex gap-4">
               <button
                 onClick={() => setSelectedDiet(selectedDiet === 'carnivore' ? null : 'carnivore')}
                 className={`px-4 py-2 rounded-lg transition-colors ${
                   selectedDiet === 'carnivore'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    ? 'bg-terracota text-white'
+                    : 'bg-smoke text-carbon hover:bg-carbon/10'
                 }`}
               >
                 Carnívoro
@@ -81,8 +83,8 @@ export default function QuickFilters() {
                 onClick={() => setSelectedDiet(selectedDiet === 'vegan' ? null : 'vegan')}
                 className={`px-4 py-2 rounded-lg transition-colors ${
                   selectedDiet === 'vegan'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    ? 'bg-terracota text-white'
+                    : 'bg-smoke text-carbon hover:bg-carbon/10'
                 }`}
               >
                 Vegano
@@ -91,7 +93,7 @@ export default function QuickFilters() {
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Dificultad</label>
+            <label className="block text-sm font-semibold text-carbon mb-2">Dificultad</label>
             <div className="flex gap-4">
               {(['easy', 'medium', 'hard'] as const).map((difficulty) => (
                 <button
@@ -99,8 +101,8 @@ export default function QuickFilters() {
                   onClick={() => setSelectedDifficulty(selectedDifficulty === difficulty ? null : difficulty)}
                   className={`px-4 py-2 rounded-lg transition-colors ${
                     selectedDifficulty === difficulty
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      ? 'bg-terracota text-white'
+                      : 'bg-smoke text-carbon hover:bg-carbon/10'
                   }`}
                 >
                   {difficulty === 'easy' ? 'Fácil' : difficulty === 'medium' ? 'Medio' : 'Difícil'}
@@ -112,7 +114,7 @@ export default function QuickFilters() {
           <button
             onClick={handleFilter}
             disabled={loading}
-            className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className="w-full px-6 py-3 bg-terracota text-white rounded-lg hover:bg-terracota/90 transition-colors font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
             {loading ? 'Buscando...' : 'Buscar Recetas'}
           </button>
@@ -125,13 +127,15 @@ export default function QuickFilters() {
 
       {recipes.length > 0 && (
         <div>
-          <h3 className="text-xl font-semibold mb-4 text-gray-800">Resultados</h3>
+          <h3 className="text-xl font-semibold mb-4 text-carbon">Resultados</h3>
           <div>
             {recipes.map((recipe) => (
               <RecipeCard
                 key={recipe.id}
                 id={recipe.id}
                 title={recipe.title}
+                prepTime={recipe.prepTime}
+                cookTime={recipe.cookTime}
                 ingredients={recipe.ingredients}
                 difficulty={recipe.difficulty}
                 servings={recipe.servings}
@@ -150,7 +154,7 @@ export default function QuickFilters() {
 
       {loading && (
         <div className="flex justify-center items-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-terracota"></div>
         </div>
       )}
     </div>

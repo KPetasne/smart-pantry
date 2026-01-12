@@ -25,7 +25,7 @@ export default function RatingStars({
 
   // Check if user has already voted for this recipe
   useEffect(() => {
-    if (!interactive || !recipeId) return;
+    if (!interactive || !recipeId || typeof window === 'undefined') return;
 
     const sessionId = getOrCreateSessionId();
     const votedRecipes = getVotedRecipes();

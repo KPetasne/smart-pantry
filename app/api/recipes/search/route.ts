@@ -127,63 +127,78 @@ export async function POST(request: Request) {
     const countryId = countryResult[0].id;
 
     // Insert into database using transaction
-    // First, insert the recipe
-    const recipeResult = await query<{ id: number }>(
-      `INSERT INTO recipes (title, difficulty, prep_time, cook_time, country_id, servings) 
-       VALUES ($1, $2, $3, $4, $5, $6) 
-       RETURNING id`,
-      [
-        validatedRecipe.title,
-        validatedRecipe.difficulty,
-        validatedRecipe.prepTime,
-        validatedRecipe.cookTime,
-        countryId,
-        validatedRecipe.servings ?? null
-      ]
-    );
+    const { pool } = await import('@/lib/db');
+    const client = await pool.connect();
+    
+    let recipeId: number;
+    
+    try {
+      await client.query('BEGIN');
 
-    const recipeId = recipeResult[0].id;
-
-    // Insert instructions
-    for (let i = 0; i < validatedRecipe.instructions.length; i++) {
-      await execute(
-        `INSERT INTO instructions (recipe_id, step_number, instruction) 
-         VALUES ($1, $2, $3)`,
-        [recipeId, i + 1, validatedRecipe.instructions[i]]
+      // Insert the recipe
+      const recipeResult = await client.query<{ id: number }>(
+        `INSERT INTO recipes (title, difficulty, prep_time, cook_time, country_id, servings) 
+         VALUES ($1, $2, $3, $4, $5, $6) 
+         RETURNING id`,
+        [
+          validatedRecipe.title,
+          validatedRecipe.difficulty,
+          validatedRecipe.prepTime,
+          validatedRecipe.cookTime,
+          countryId,
+          validatedRecipe.servings ?? null
+        ]
       );
-    }
 
-    // Then, insert ingredients and relationships
-    for (const ingredientName of validatedRecipe.ingredients) {
-      // Get or create ingredient
-      const normalizedName = ingredientName.trim().toLowerCase();
-      
-      let ingredientId: number;
-      try {
-        const ingredientResult = await query<{ id: number }>(
-          `INSERT INTO ingredients (name) VALUES ($1) RETURNING id`,
-          [normalizedName]
+      recipeId = recipeResult.rows[0].id;
+
+      // Insert instructions
+      for (let i = 0; i < validatedRecipe.instructions.length; i++) {
+        await client.query(
+          `INSERT INTO instructions (recipe_id, step_number, instruction) 
+           VALUES ($1, $2, $3)`,
+          [recipeId, i + 1, validatedRecipe.instructions[i]]
         );
-        ingredientId = ingredientResult[0].id;
-      } catch (error: any) {
-        if (error.code === '23505') {
-          const existing = await query<{ id: number }>(
-            'SELECT id FROM ingredients WHERE name = $1',
-            [normalizedName]
-          );
-          ingredientId = existing[0].id;
-        } else {
-          throw error;
-        }
       }
 
-      // Create relationship with quantity
-      await execute(
-        `INSERT INTO recipe_ingredients (recipe_id, ingredient_id, quantity) 
-         VALUES ($1, $2, $3) 
-         ON CONFLICT (recipe_id, ingredient_id) DO NOTHING`,
-        [recipeId, ingredientId, ingredientName.substring(0, 150)]
-      );
+      // Insert ingredients and relationships
+      for (const ingredientName of validatedRecipe.ingredients) {
+        const normalizedName = ingredientName.trim().toLowerCase();
+        
+        let ingredientId: number;
+        try {
+          const ingredientResult = await client.query<{ id: number }>(
+            `INSERT INTO ingredients (name) VALUES ($1) RETURNING id`,
+            [normalizedName]
+          );
+          ingredientId = ingredientResult.rows[0].id;
+        } catch (error: any) {
+          if (error.code === '23505') {
+            const existing = await client.query<{ id: number }>(
+              'SELECT id FROM ingredients WHERE name = $1',
+              [normalizedName]
+            );
+            ingredientId = existing.rows[0].id;
+          } else {
+            throw error;
+          }
+        }
+
+        // Create relationship with quantity
+        await client.query(
+          `INSERT INTO recipe_ingredients (recipe_id, ingredient_id, quantity) 
+           VALUES ($1, $2, $3) 
+           ON CONFLICT (recipe_id, ingredient_id) DO NOTHING`,
+          [recipeId, ingredientId, ingredientName.substring(0, 150)]
+        );
+      }
+
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
     }
 
     // Track search analytics (non-blocking)

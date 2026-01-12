@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { query, execute } from '@/lib/db';
+import { query, execute, pool } from '@/lib/db';
 import { z } from 'zod';
 import { validateRecipeData } from '@/lib/recipe-normalizer';
 
@@ -108,70 +108,83 @@ export async function POST(request: Request) {
     
     const countryId = countryResult[0].id;
 
-    // Insert recipe
-    const recipeResult = await query<{ id: number }>(
-      `INSERT INTO recipes (title, prep_time, cook_time, difficulty, servings, country_id) 
-       VALUES ($1, $2, $3, $4, $5, $6) 
-       RETURNING id`,
-      [
-        recipe.title,
-        recipe.prepTime,
-        recipe.cookTime,
-        recipe.difficulty,
-        recipe.servings ?? null,
-        countryId,
-      ]
-    );
+    // Use transaction for all inserts
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
 
-    const recipeId = recipeResult[0].id;
-
-    // Insert instructions
-    for (let i = 0; i < recipe.instructions.length; i++) {
-      await execute(
-        `INSERT INTO instructions (recipe_id, step_number, instruction) 
-         VALUES ($1, $2, $3)`,
-        [recipeId, i + 1, recipe.instructions[i]]
+      // Insert recipe
+      const recipeResult = await client.query<{ id: number }>(
+        `INSERT INTO recipes (title, prep_time, cook_time, difficulty, servings, country_id) 
+         VALUES ($1, $2, $3, $4, $5, $6) 
+         RETURNING id`,
+        [
+          recipe.title,
+          recipe.prepTime,
+          recipe.cookTime,
+          recipe.difficulty,
+          recipe.servings ?? null,
+          countryId,
+        ]
       );
-    }
 
-    // Insert ingredients and relationships
-    for (const ingredientName of recipe.ingredients) {
-      const normalized = ingredientName.trim().toLowerCase();
-      
-      // Get or create ingredient
-      let ingredientId: number;
-      try {
-        const ingredientResult = await query<{ id: number }>(
-          'INSERT INTO ingredients (name) VALUES ($1) RETURNING id',
-          [normalized]
+      const recipeId = recipeResult.rows[0].id;
+
+      // Insert instructions
+      for (let i = 0; i < recipe.instructions.length; i++) {
+        await client.query(
+          `INSERT INTO instructions (recipe_id, step_number, instruction) 
+           VALUES ($1, $2, $3)`,
+          [recipeId, i + 1, recipe.instructions[i]]
         );
-        ingredientId = ingredientResult[0].id;
-      } catch (error: any) {
-        if (error.code === '23505') {
-          const existing = await query<{ id: number }>(
-            'SELECT id FROM ingredients WHERE name = $1',
-            [normalized]
-          );
-          ingredientId = existing[0].id;
-        } else {
-          throw error;
-        }
       }
 
-      // Create relationship
-      await execute(
-        `INSERT INTO recipe_ingredients (recipe_id, ingredient_id, quantity) 
-         VALUES ($1, $2, $3) 
-         ON CONFLICT (recipe_id, ingredient_id) DO NOTHING`,
-        [recipeId, ingredientId, ingredientName.substring(0, 150)]
-      );
-    }
+      // Insert ingredients and relationships
+      for (const ingredientName of recipe.ingredients) {
+        const normalized = ingredientName.trim().toLowerCase();
+        
+        // Get or create ingredient
+        let ingredientId: number;
+        try {
+          const ingredientResult = await client.query<{ id: number }>(
+            'INSERT INTO ingredients (name) VALUES ($1) RETURNING id',
+            [normalized]
+          );
+          ingredientId = ingredientResult.rows[0].id;
+        } catch (error: any) {
+          if (error.code === '23505') {
+            const existing = await client.query<{ id: number }>(
+              'SELECT id FROM ingredients WHERE name = $1',
+              [normalized]
+            );
+            ingredientId = existing.rows[0].id;
+          } else {
+            throw error;
+          }
+        }
 
-    return NextResponse.json({
-      success: true,
-      id: recipeId,
-      message: 'Recipe created successfully',
-    }, { status: 201 });
+        // Create relationship
+        await client.query(
+          `INSERT INTO recipe_ingredients (recipe_id, ingredient_id, quantity) 
+           VALUES ($1, $2, $3) 
+           ON CONFLICT (recipe_id, ingredient_id) DO NOTHING`,
+          [recipeId, ingredientId, ingredientName.substring(0, 150)]
+        );
+      }
+
+      await client.query('COMMIT');
+      
+      return NextResponse.json({
+        success: true,
+        id: recipeId,
+        message: 'Recipe created successfully',
+      }, { status: 201 });
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

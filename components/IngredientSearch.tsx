@@ -59,7 +59,7 @@ export default function IngredientSearch({ onSearch, loading = false }: Ingredie
               value={ingredient}
               onChange={(e) => handleIngredientChange(index, e.target.value)}
               placeholder={`Ingrediente ${index + 1}`}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder-gray-400"
+              className="flex-1 px-4 py-2 border border-carbon/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-terracota text-carbon placeholder-gray-400"
               disabled={loading}
             />
             {ingredients.length > 2 && (
@@ -80,7 +80,7 @@ export default function IngredientSearch({ onSearch, loading = false }: Ingredie
         <button
           type="button"
           onClick={addIngredientField}
-          className="text-blue-600 hover:text-blue-700 text-sm"
+          className="text-terracota hover:text-terracota/80 text-sm"
           disabled={loading}
         >
           + Agregar otro ingrediente
@@ -94,7 +94,7 @@ export default function IngredientSearch({ onSearch, loading = false }: Ingredie
       <button
         type="submit"
         disabled={loading}
-        className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed"
+        className="w-full px-6 py-3 bg-terracota text-white rounded-lg hover:bg-terracota/90 transition-colors font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed"
       >
         {loading ? 'Buscando...' : 'Buscar Receta'}
       </button>

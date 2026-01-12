@@ -3,6 +3,41 @@ import { query } from '../lib/db';
 import bcrypt from 'bcryptjs';
 import * as readline from 'readline';
 
+type LogFunction = (message: string) => void;
+
+// Function to create admin user programmatically (for API use)
+export async function createAdminUser(
+  username: string,
+  password: string,
+  log: LogFunction = console.log
+): Promise<{ success: boolean; message: string }> {
+  try {
+    // Check if user already exists
+    const existing = await query(
+      'SELECT id FROM admin_users WHERE username = $1',
+      [username]
+    );
+
+    if (existing.length > 0) {
+      return { success: false, message: 'Username already exists' };
+    }
+
+    // Hash password and create user
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await query(
+      'INSERT INTO admin_users (username, password_hash) VALUES ($1, $2)',
+      [username, hashedPassword]
+    );
+
+    log(`✅ Admin user '${username}' created successfully`);
+    return { success: true, message: 'User created successfully' };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    log(`❌ Error creating admin user: ${message}`);
+    return { success: false, message };
+  }
+}
+
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout,

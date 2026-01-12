@@ -4,10 +4,10 @@ import Link from 'next/link';
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+    <main className="min-h-screen bg-gradient-to-b from-smoke to-white">
       <div className="container mx-auto px-4 py-8 md:py-12">
         <div className="text-center mb-12">
-          <h1 className="text-5xl md:text-6xl font-bold text-gray-800 mb-4">
+          <h1 className="text-5xl md:text-6xl font-bold text-carbon mb-4">
             ¿Qué como?
           </h1>
           <p className="text-xl md:text-2xl text-gray-600 mb-2">
@@ -19,7 +19,7 @@ export default function Home() {
         </div>
 
         <div className="max-w-2xl mx-auto mb-12">
-          <h2 className="text-3xl font-bold text-gray-800 mb-6 text-center">
+          <h2 className="text-3xl font-bold text-carbon mb-6 text-center">
             ✨ Tu Receta de Inspiración
           </h2>
           <RandomRecipe />
@@ -34,13 +34,13 @@ export default function Home() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               href="/search"
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold text-center"
+              className="px-6 py-3 bg-terracota text-white rounded-lg hover:bg-terracota/90 transition-colors font-semibold text-center"
             >
               🔍 Buscar por Ingredientes
             </Link>
             <Link
               href="/filters"
-              className="px-6 py-3 bg-white border-2 border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors font-semibold text-center"
+              className="px-6 py-3 bg-smoke border-2 border-terracota text-terracota rounded-lg hover:bg-terracota/10 transition-colors font-semibold text-center"
             >
               ⚡ Filtros Rápidos
             </Link>

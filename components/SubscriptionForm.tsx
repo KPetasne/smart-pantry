@@ -42,7 +42,7 @@ export default function SubscriptionForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
+        <label htmlFor="email" className="block text-sm font-semibold text-white mb-2">
           Email
         </label>
         <input
@@ -52,7 +52,7 @@ export default function SubscriptionForm() {
           onChange={(e) => setEmail(e.target.value)}
           placeholder="tu@email.com"
           required
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 placeholder-gray-400"
+          className="w-full px-4 py-2 border border-carbon/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-mostaza text-carbon placeholder-gray-400 bg-white"
           disabled={loading}
         />
       </div>
@@ -60,7 +60,7 @@ export default function SubscriptionForm() {
       <button
         type="submit"
         disabled={loading}
-        className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed"
+        className="w-full px-6 py-3 bg-mostaza text-carbon rounded-lg hover:bg-mostaza/90 transition-colors font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed"
       >
         {loading ? 'Suscribiendo...' : 'Suscribirse a la Lista de Espera'}
       </button>
