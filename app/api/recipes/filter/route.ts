@@ -14,7 +14,7 @@ export async function POST(request: Request) {
     const { diet, difficulty, limit } = filterSchema.parse(body);
 
     let queryText = `
-      SELECT r.id, r.title, r.description, r.prep_time, r.cook_time, r.difficulty, r.servings, 
+      SELECT r.id, r.title, r.prep_time, r.cook_time, r.difficulty, r.servings, 
              c.name as country_name, c.code as country_code, r.created_at
       FROM recipes r
       INNER JOIN countries c ON r.country_id = c.id
@@ -46,24 +46,37 @@ export async function POST(request: Request) {
       params.push('%pollo%', '%carne%', '%cerdo%', '%res%', '%pescado%');
       paramIndex += 5;
     } else if (diet === 'vegan') {
+      // For vegan, exclude recipes that have any animal products
       queryText += `
-        LEFT JOIN recipe_ingredients ri ON r.id = ri.recipe_id
-        LEFT JOIN ingredients i ON ri.ingredient_id = i.id AND (
-          i.name LIKE '%pollo%' OR 
-          i.name LIKE '%carne%' OR 
-          i.name LIKE '%cerdo%' OR
-          i.name LIKE '%res%' OR
-          i.name LIKE '%pescado%' OR
-          i.name LIKE '%huevo%' OR
-          i.name LIKE '%leche%' OR
-          i.name LIKE '%queso%'
+        WHERE r.id NOT IN (
+          SELECT DISTINCT ri.recipe_id
+          FROM recipe_ingredients ri
+          INNER JOIN ingredients i ON ri.ingredient_id = i.id
+          WHERE 
+            i.name LIKE '%pollo%' OR 
+            i.name LIKE '%carne%' OR 
+            i.name LIKE '%cerdo%' OR
+            i.name LIKE '%res%' OR
+            i.name LIKE '%pescado%' OR
+            i.name LIKE '%huevo%' OR
+            i.name LIKE '%leche%' OR
+            i.name LIKE '%queso%' OR
+            i.name LIKE '%manteca%' OR
+            i.name LIKE '%mantequilla%' OR
+            i.name LIKE '%crema%' OR
+            i.name LIKE '%yogur%' OR
+            i.name LIKE '%miel%'
         )
       `;
-      conditions.push('i.id IS NULL');
     }
 
     if (conditions.length > 0) {
-      queryText += ` WHERE ${conditions.join(' AND ')}`;
+      if (diet === 'vegan') {
+        // For vegan, conditions are already in WHERE clause
+        queryText += ` AND ${conditions.join(' AND ')}`;
+      } else {
+        queryText += ` WHERE ${conditions.join(' AND ')}`;
+      }
     }
 
     queryText += ` ORDER BY RANDOM() LIMIT $${paramIndex}`;
@@ -72,7 +85,6 @@ export async function POST(request: Request) {
     const recipes = await query<{
       id: number;
       title: string;
-      description: string;
       prep_time: number;
       cook_time: number;
       difficulty: string;
@@ -105,7 +117,6 @@ export async function POST(request: Request) {
         return {
           id: recipe.id,
           title: recipe.title,
-          description: recipe.description,
           prepTime: recipe.prep_time,
           cookTime: recipe.cook_time,
           ingredients: ingredients.map(ing => ing.quantity || ing.name),

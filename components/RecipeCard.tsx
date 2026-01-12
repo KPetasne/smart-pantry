@@ -1,17 +1,18 @@
 import Link from 'next/link';
 import { UserGroupIcon, ClockIcon } from '@heroicons/react/24/outline';
 
-interface RecipeCardProps {
+interface Recipe {
   id: number;
   title: string;
-  description?: string;
   prepTime?: number;
   ingredients: string[];
   difficulty: 'easy' | 'medium' | 'hard';
   servings?: number;
 }
 
-export default function RecipeCard({ id, title, description, prepTime, ingredients, difficulty, servings }: RecipeCardProps) {
+interface RecipeCardProps extends Recipe {}
+
+export default function RecipeCard({ id, title, prepTime, ingredients, difficulty, servings }: RecipeCardProps) {
   const difficultyColors = {
     easy: 'bg-green-100 text-green-800',
     medium: 'bg-yellow-100 text-yellow-800',
@@ -25,12 +26,9 @@ export default function RecipeCard({ id, title, description, prepTime, ingredien
   };
 
   return (
-    <Link href={`/recipes/${id}`}>
+    <Link href={`/recipes/${id}`} className="block mb-6 last:mb-0">
       <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer">
         <h3 className="text-xl font-bold mb-2 text-gray-800">{title}</h3>
-        {description && (
-          <p className="text-sm text-gray-600 mb-3 line-clamp-2">{description}</p>
-        )}
         <div className="mb-3 flex flex-wrap items-center gap-3">
           <span className={`px-2 py-1 rounded text-sm font-semibold ${difficultyColors[difficulty]}`}>
             {difficultyLabels[difficulty]}

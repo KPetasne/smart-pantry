@@ -20,7 +20,6 @@ Platos: Tacos al pastor, Enchiladas verdes, Pozole, Mole, Chilaquiles, Tamales
 Devuelve SOLO JSON:
 {
   "title": "Nombre del plato",
-  "description": "Descripción breve del plato (1-2 líneas)",
   "prepTime": 15,
   "cookTime": 30,
   "ingredients": ["ingrediente1", ...],

@@ -7,7 +7,6 @@ export async function GET() {
     const recipes = await query<{
       id: number;
       title: string;
-      description: string;
       prep_time: number;
       cook_time: number;
       difficulty: string;
@@ -16,7 +15,7 @@ export async function GET() {
       country_code: string;
       created_at: Date;
     }>(
-      `SELECT r.id, r.title, r.description, r.prep_time, r.cook_time, r.difficulty, r.servings, 
+      `SELECT r.id, r.title, r.prep_time, r.cook_time, r.difficulty, r.servings, 
               c.name as country_name, c.code as country_code, r.created_at 
        FROM recipes r
        INNER JOIN countries c ON r.country_id = c.id
@@ -56,7 +55,6 @@ export async function GET() {
       {
         id: recipe.id,
         title: recipe.title,
-        description: recipe.description,
         prepTime: recipe.prep_time,
         cookTime: recipe.cook_time,
         ingredients: ingredients.map(ing => ing.quantity || ing.name),

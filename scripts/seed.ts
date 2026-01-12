@@ -1,12 +1,21 @@
 import 'dotenv/config';
+import * as readline from 'readline';
 import { query, execute } from '../lib/db';
 import { GeminiService } from '../lib/gemini-service';
 import { validateRecipeData, type RecipeData } from '../lib/recipe-normalizer';
 
-const DEFAULT_TARGET_RECIPES = 20;
-const BATCH_SIZE = 2; // Process recipes in batches to avoid overwhelming the API
-
 type LogFunction = (message: string) => void;
+
+const GEMINI_MODELS = [
+  'gemini-3-pro-preview',
+  'gemini-3-flash-preview',
+  'gemini-2.5-flash',
+  'gemini-2.5-flash-lite',
+  'gemini-2.5-pro',
+  'gemini-2.0-flash'
+] as const;
+
+type GeminiModel = typeof GEMINI_MODELS[number];
 
 async function initializeSchema(log: LogFunction = console.log) {
   log('Initializing database schema...');
@@ -192,10 +201,12 @@ async function insertRecipe(recipe: RecipeData, language: string = 'es', country
   return recipeId;
 }
 
-export async function seedRecipes(log: LogFunction = console.log, targetRecipes: number = DEFAULT_TARGET_RECIPES) {
+export async function seedRecipes(log: LogFunction = console.log, targetRecipes: number, batchSize: number, modelName: string = 'gemini-2.5-flash') {
   log(`Starting seed process for ${targetRecipes} recipes...`);
+  log(`Batch size: ${batchSize}`);
+  log(`Using model: ${modelName}`);
   
-  const geminiService = new GeminiService();
+  const geminiService = new GeminiService(modelName);
   let successCount = 0;
   let errorCount = 0;
 
@@ -206,19 +217,17 @@ export async function seedRecipes(log: LogFunction = console.log, targetRecipes:
   const existing = await query<{ count: string }>('SELECT COUNT(*) as count FROM recipes');
   const existingCount = parseInt(existing[0].count);
   
-  if (existingCount >= targetRecipes) {
-    log(`Already have ${existingCount} recipes. Target reached.`);
-    return;
-  }
-
-  const recipesToGenerate = targetRecipes - existingCount;
+  log(`Current recipes in database: ${existingCount}`);
+  log(`Will generate ${targetRecipes} new recipes...`);
+  
+  const recipesToGenerate = targetRecipes;
   log(`Generating ${recipesToGenerate} new recipes from all countries...`);
 
-  for (let i = 0; i < recipesToGenerate; i += BATCH_SIZE) {
-    const batchSize = Math.min(BATCH_SIZE, recipesToGenerate - i);
-    const batch = Array.from({ length: batchSize }, (_, idx) => i + idx + 1);
+  for (let i = 0; i < recipesToGenerate; i += batchSize) {
+    const currentBatchSize = Math.min(batchSize, recipesToGenerate - i);
+    const batch = Array.from({ length: currentBatchSize }, (_, idx) => i + idx + 1);
 
-    log(`\nProcessing batch ${Math.floor(i / BATCH_SIZE) + 1} (recipes ${i + 1}-${i + batchSize})...`);
+    log(`\nProcessing batch ${Math.floor(i / batchSize) + 1} (recipes ${i + 1}-${i + currentBatchSize})...`);
 
     const promises = batch.map(async (recipeNum) => {
       try {
@@ -248,7 +257,7 @@ export async function seedRecipes(log: LogFunction = console.log, targetRecipes:
     await Promise.all(promises);
 
     // Add a small delay between batches to avoid rate limiting
-    if (i + BATCH_SIZE < recipesToGenerate) {
+    if (i + batchSize < recipesToGenerate) {
       log('Waiting 5 seconds before next batch...');
       await new Promise(resolve => setTimeout(resolve, 5000));
     }
@@ -263,14 +272,75 @@ export async function seedRecipes(log: LogFunction = console.log, targetRecipes:
   log(`Total recipes in database: ${final[0].count}`);
 }
 
+function createReadlineInterface() {
+  return readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+}
+
+function question(rl: readline.Interface, prompt: string): Promise<string> {
+  return new Promise((resolve) => {
+    rl.question(prompt, (answer) => {
+      resolve(answer);
+    });
+  });
+}
+
 async function main() {
+  const rl = createReadlineInterface();
+  
   try {
-    // Skip schema initialization - tables already exist in Neon
-    // await initializeSchema();
-    await seedRecipes();
+    // Ask for number of recipes
+    const recipesAnswer = await question(rl, '¿Cuántas recetas deseas generar? ');
+    const targetRecipes = parseInt(recipesAnswer);
+    
+    if (isNaN(targetRecipes) || targetRecipes <= 0) {
+      console.error('Error: Debes ingresar un número válido mayor a 0');
+      rl.close();
+      process.exit(1);
+    }
+    
+    // Ask for batch size
+    const batchAnswer = await question(rl, '¿Cuál es el tamaño del batch? ');
+    const batchSize = parseInt(batchAnswer);
+    
+    if (isNaN(batchSize) || batchSize <= 0) {
+      console.error('Error: Debes ingresar un número válido mayor a 0');
+      rl.close();
+      process.exit(1);
+    }
+    
+    // Show model options
+    console.log('\nModelos disponibles:');
+    GEMINI_MODELS.forEach((model, index) => {
+      console.log(`${index + 1}. ${model}`);
+    });
+    
+    const modelAnswer = await question(rl, '\nSelecciona el número del modelo: ');
+    const modelIndex = parseInt(modelAnswer) - 1;
+    
+    if (isNaN(modelIndex) || modelIndex < 0 || modelIndex >= GEMINI_MODELS.length) {
+      console.error('Error: Debes seleccionar un número válido de la lista');
+      rl.close();
+      process.exit(1);
+    }
+    
+    const selectedModel = GEMINI_MODELS[modelIndex];
+    
+    rl.close();
+    
+    console.log('\n--- Configuración ---');
+    console.log(`Recetas: ${targetRecipes}`);
+    console.log(`Batch: ${batchSize}`);
+    console.log(`Modelo: ${selectedModel}`);
+    console.log('---\n');
+    
+    await seedRecipes(console.log, targetRecipes, batchSize, selectedModel);
     process.exit(0);
   } catch (error) {
     console.error('Fatal error during seeding:', error);
+    rl.close();
     process.exit(1);
   }
 }

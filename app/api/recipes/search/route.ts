@@ -30,7 +30,6 @@ export async function POST(request: Request) {
     const matchingRecipes = await query<{
       recipe_id: number;
       title: string;
-      description: string;
       prep_time: number;
       cook_time: number;
       difficulty: string;
@@ -43,7 +42,6 @@ export async function POST(request: Request) {
       `SELECT 
         r.id as recipe_id,
         r.title,
-        r.description,
         r.prep_time,
         r.cook_time,
         r.difficulty,
@@ -57,7 +55,7 @@ export async function POST(request: Request) {
       INNER JOIN ingredients i ON ri.ingredient_id = i.id
       INNER JOIN countries c ON r.country_id = c.id
       WHERE i.name = ANY($1::text[])
-      GROUP BY r.id, r.title, r.description, r.prep_time, r.cook_time, r.difficulty, r.servings, c.name, c.code, r.created_at
+      GROUP BY r.id, r.title, r.prep_time, r.cook_time, r.difficulty, r.servings, c.name, c.code, r.created_at
       HAVING COUNT(DISTINCT i.name) = $2
       ORDER BY r.created_at DESC
       LIMIT 1`,
@@ -95,7 +93,6 @@ export async function POST(request: Request) {
       return NextResponse.json({
         id: recipe.recipe_id,
         title: recipe.title,
-        description: recipe.description,
         prepTime: recipe.prep_time,
         cookTime: recipe.cook_time,
         ingredients: recipeIngredients.map(ing => ing.quantity || ing.name),
@@ -123,12 +120,11 @@ export async function POST(request: Request) {
     // Insert into database using transaction
     // First, insert the recipe
     const recipeResult = await query<{ id: number }>(
-      `INSERT INTO recipes (title, description, difficulty, prep_time, cook_time, country_id, servings) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7) 
+      `INSERT INTO recipes (title, difficulty, prep_time, cook_time, country_id, servings) 
+       VALUES ($1, $2, $3, $4, $5, $6) 
        RETURNING id`,
       [
         validatedRecipe.title,
-        validatedRecipe.description,
         validatedRecipe.difficulty,
         validatedRecipe.prepTime,
         validatedRecipe.cookTime,
@@ -189,7 +185,6 @@ export async function POST(request: Request) {
     return NextResponse.json({
       id: recipeId,
       title: validatedRecipe.title,
-      description: validatedRecipe.description,
       prepTime: validatedRecipe.prepTime,
       cookTime: validatedRecipe.cookTime,
       ingredients: validatedRecipe.ingredients,

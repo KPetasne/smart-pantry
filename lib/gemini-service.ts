@@ -5,25 +5,24 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 export interface GeneratedRecipe {
   title: string;
-  description: string;
   prepTime: number;
   cookTime: number;
   ingredients: string[];
   instructions: string[];
   difficulty: 'easy' | 'medium' | 'hard';
   servings?: number;
-  country: Country;
+  country: string;
   language: string;
 }
 
 export class GeminiService {
   private model;
 
-  constructor() {
+  constructor(modelName: string = 'gemini-2.5-flash') {
     if (!process.env.GEMINI_API_KEY) {
       throw new Error('GEMINI_API_KEY is not set in environment variables');
     }
-    this.model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    this.model = genAI.getGenerativeModel({ model: modelName });
   }
 
   async generateRecipe(ingredients?: string[], country: Country = 'argentina', language: string = 'es'): Promise<GeneratedRecipe> {
@@ -77,14 +76,12 @@ export class GeminiService {
         }
       }
       
-      // Extract description, prepTime, cookTime with defaults
-      const description = parsed.description || parsed.title;
+      // Extract prepTime, cookTime with defaults
       const prepTime = typeof parsed.prepTime === 'number' ? parsed.prepTime : 15;
       const cookTime = typeof parsed.cookTime === 'number' ? parsed.cookTime : 30;
       
       return {
         title: parsed.title,
-        description,
         prepTime,
         cookTime,
         ingredients: Array.isArray(parsed.ingredients) ? parsed.ingredients : [],

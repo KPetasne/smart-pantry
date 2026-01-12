@@ -7,7 +7,6 @@ import { validateRecipeData } from '@/lib/recipe-normalizer';
 // Schema for creating/updating recipes
 const recipeSchema = z.object({
   title: z.string().min(1).max(255),
-  description: z.string().min(1).max(500).optional(),
   prepTime: z.number().int().min(1).max(480).optional(),
   cookTime: z.number().int().min(1).max(480).optional(),
   ingredients: z.array(z.string().min(1)).min(1),
@@ -41,7 +40,6 @@ export async function GET(request: Request) {
     const recipes = await query<{
       id: number;
       title: string;
-      description: string;
       prep_time: number;
       cook_time: number;
       difficulty: string;
@@ -50,7 +48,7 @@ export async function GET(request: Request) {
       country_name: string;
       created_at: Date;
     }>(
-      `SELECT r.id, r.title, r.description, r.prep_time, r.cook_time, r.difficulty, r.servings, 
+      `SELECT r.id, r.title, r.prep_time, r.cook_time, r.difficulty, r.servings, 
               c.code as country_code, c.name as country_name, r.created_at 
        FROM recipes r
        INNER JOIN countries c ON r.country_id = c.id
@@ -63,7 +61,6 @@ export async function GET(request: Request) {
       recipes: recipes.map(r => ({
         id: r.id,
         title: r.title,
-        description: r.description,
         prepTime: r.prep_time,
         cookTime: r.cook_time,
         difficulty: r.difficulty,
@@ -113,12 +110,11 @@ export async function POST(request: Request) {
 
     // Insert recipe
     const recipeResult = await query<{ id: number }>(
-      `INSERT INTO recipes (title, description, prep_time, cook_time, difficulty, servings, country_id) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7) 
+      `INSERT INTO recipes (title, prep_time, cook_time, difficulty, servings, country_id) 
+       VALUES ($1, $2, $3, $4, $5, $6) 
        RETURNING id`,
       [
         recipe.title,
-        recipe.description,
         recipe.prepTime,
         recipe.cookTime,
         recipe.difficulty,

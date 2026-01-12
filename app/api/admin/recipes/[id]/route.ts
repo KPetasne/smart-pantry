@@ -146,11 +146,10 @@ export async function PUT(
     // Update recipe
     await execute(
       `UPDATE recipes 
-       SET title = $1, description = $2, prep_time = $3, cook_time = $4, difficulty = $5, servings = $6, country_id = $7, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $8`,
+       SET title = $1, prep_time = $2, cook_time = $3, difficulty = $4, servings = $5, country_id = $6, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $7`,
       [
         recipe.title,
-        recipe.description,
         recipe.prepTime,
         recipe.cookTime,
         recipe.difficulty,

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import RecipeCard from './RecipeCard';
 
 interface Recipe {
@@ -17,6 +17,7 @@ export default function RandomRecipe() {
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const hasInitialized = useRef(false);
 
   const fetchRandomRecipe = async () => {
     setLoading(true);
@@ -36,7 +37,10 @@ export default function RandomRecipe() {
   };
 
   useEffect(() => {
-    fetchRandomRecipe();
+    if (!hasInitialized.current) {
+      hasInitialized.current = true;
+      fetchRandomRecipe();
+    }
   }, []);
 
   if (loading) {

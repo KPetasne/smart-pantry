@@ -4,7 +4,6 @@ interface RecipeDetailProps {
   recipe: {
     id: number;
     title: string;
-    description?: string;
     prepTime?: number;
     cookTime?: number;
     ingredients: string[];
@@ -32,9 +31,6 @@ export default function RecipeDetail({ recipe }: RecipeDetailProps) {
     <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-lg p-6 md:p-8">
       <div className="mb-6">
         <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">{recipe.title}</h1>
-        {recipe.description && (
-          <p className="text-gray-600 mb-4 text-lg">{recipe.description}</p>
-        )}
         <div className="flex flex-wrap items-center gap-4">
           <span className={`px-3 py-1 rounded-full text-sm font-semibold ${difficultyColors[recipe.difficulty]}`}>
             {difficultyLabels[recipe.difficulty]}

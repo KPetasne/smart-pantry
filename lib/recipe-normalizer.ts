@@ -25,7 +25,6 @@ export function normalizeIngredients(ingredients: string[]): string[] {
  */
 export interface RecipeData {
   title: string;
-  description: string;
   prepTime: number;
   cookTime: number;
   ingredients: string[];

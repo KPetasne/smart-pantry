@@ -3,9 +3,11 @@ import { auth } from '@/auth';
 import { z } from 'zod';
 
 const scriptSchema = z.object({
-  action: z.enum(['seed', 'cleanup']),
+  action: z.enum(['seed', 'cleanup', 'cleanup-empty']),
   params: z.object({
-    count: z.number().int().positive().optional(),
+    targetRecipes: z.number().int().positive().optional(),
+    batchSize: z.number().int().positive().optional(),
+    model: z.string().optional(),
   }).optional(),
 });
 
@@ -85,8 +87,8 @@ export async function GET(request: Request) {
 
 async function executeScript(
   executionId: string,
-  action: 'seed' | 'cleanup',
-  params?: { count?: number }
+  action: 'seed' | 'cleanup' | 'cleanup-empty',
+  params?: { targetRecipes?: number; batchSize?: number; model?: string }
 ) {
   const execution = activeExecutions.get(executionId);
   if (!execution) return;
@@ -98,9 +100,17 @@ async function executeScript(
   try {
     if (action === 'seed') {
       log('Starting seed script...');
+      const targetRecipes = params?.targetRecipes || 20;
+      const batchSize = params?.batchSize || 2;
+      const model = params?.model || 'gemini-2.5-flash';
+      
+      log(`Target recipes: ${targetRecipes}`);
+      log(`Batch size: ${batchSize}`);
+      log(`Model: ${model}`);
+      
       // Import and execute seed function
       const { seedRecipes } = await import('@/scripts/seed');
-      await seedRecipes(log, params?.count);
+      await seedRecipes(log, targetRecipes, batchSize, model);
       log('Seed script completed successfully');
       execution.status = 'completed';
     } else if (action === 'cleanup') {
@@ -109,6 +119,13 @@ async function executeScript(
       const { removeDuplicateRecipes } = await import('@/scripts/cleanup-duplicates');
       await removeDuplicateRecipes(log);
       log('Cleanup script completed successfully');
+      execution.status = 'completed';
+    } else if (action === 'cleanup-empty') {
+      log('Starting cleanup empty recipes script...');
+      // Import and execute cleanup empty function
+      const { removeEmptyRecipes } = await import('@/scripts/cleanup-empty-recipes');
+      await removeEmptyRecipes(log);
+      log('Cleanup empty recipes script completed successfully');
       execution.status = 'completed';
     }
   } catch (error) {

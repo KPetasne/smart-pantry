@@ -10,7 +10,6 @@ Platos tradicionales: Milanesas napolitanas, Empanadas de carne, Locro, Ñoquis,
 Devuelve SOLO un objeto JSON válido (sin markdown):
 {
   "title": "Nombre exacto del plato argentino",
-  "description": "Descripción breve del plato (1-2 líneas)",
   "prepTime": 15,
   "cookTime": 30,
   "ingredients": ["500g de carne picada", "4 papas grandes", ...],
@@ -27,7 +26,6 @@ Platos: Milanesas napolitanas, Empanadas de carne, Locro criollo, Ñoquis del 29
 Devuelve SOLO JSON (sin markdown):
 {
   "title": "Nombre del plato",
-  "description": "Descripción breve del plato (1-2 líneas)",
   "prepTime": 15,
   "cookTime": 30,
   "ingredients": ["500g ingrediente", ...],

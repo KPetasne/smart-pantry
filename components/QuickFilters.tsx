@@ -19,6 +19,7 @@ export default function QuickFilters() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasSearched, setHasSearched] = useState(false);
 
   const handleFilter = async () => {
     if (!selectedDiet && !selectedDifficulty) {
@@ -26,8 +27,10 @@ export default function QuickFilters() {
       return;
     }
 
+    setRecipes([]);
     setLoading(true);
     setError(null);
+    setHasSearched(true);
 
     try {
       const response = await fetch('/api/recipes/filter', {
@@ -123,7 +126,7 @@ export default function QuickFilters() {
       {recipes.length > 0 && (
         <div>
           <h3 className="text-xl font-semibold mb-4 text-gray-800">Resultados</h3>
-          <div className="space-y-4">
+          <div>
             {recipes.map((recipe) => (
               <RecipeCard
                 key={recipe.id}
@@ -135,6 +138,13 @@ export default function QuickFilters() {
               />
             ))}
           </div>
+        </div>
+      )}
+
+      {!loading && hasSearched && recipes.length === 0 && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
+          <p className="text-yellow-800 font-semibold">No se encontraron recetas con estos filtros</p>
+          <p className="text-yellow-600 text-sm mt-2">Intenta con otros criterios de búsqueda</p>
         </div>
       )}
 

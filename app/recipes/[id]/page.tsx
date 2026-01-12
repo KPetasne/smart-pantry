@@ -12,14 +12,13 @@ async function getRecipe(id: number) {
     const recipes = await query<{
       id: number;
       title: string;
-      description: string;
       prep_time: number;
       cook_time: number;
       difficulty: string;
       servings: number | null;
       created_at: Date;
     }>(
-      'SELECT id, title, description, prep_time, cook_time, difficulty, servings, created_at FROM recipes WHERE id = $1',
+      'SELECT id, title, prep_time, cook_time, difficulty, servings, created_at FROM recipes WHERE id = $1',
       [id]
     );
 
@@ -50,7 +49,6 @@ async function getRecipe(id: number) {
     return {
       id: recipe.id,
       title: recipe.title,
-      description: recipe.description,
       prepTime: recipe.prep_time,
       cookTime: recipe.cook_time,
       ingredients: ingredients.map(ing => ing.quantity),

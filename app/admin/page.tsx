@@ -12,24 +12,49 @@ interface Stats {
 interface ScriptModalProps {
   isOpen: boolean;
   onClose: () => void;
-  action: 'seed' | 'cleanup';
+  action: 'seed' | 'cleanup' | 'cleanup-empty';
 }
 
 function ScriptModal({ isOpen, onClose, action }: ScriptModalProps) {
   const [logs, setLogs] = useState<string[]>([]);
   const [isRunning, setIsRunning] = useState(false);
   const [executionId, setExecutionId] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(action === 'seed');
+  
+  // Seed parameters
+  const [targetRecipes, setTargetRecipes] = useState('20');
+  const [batchSize, setBatchSize] = useState('2');
+  const [model, setModel] = useState('gemini-2.5-flash');
+  
+  const models = [
+    'gemini-3-pro-preview',
+    'gemini-3-flash-preview',
+    'gemini-2.5-flash',
+    'gemini-2.5-flash-lite',
+    'gemini-2.5-pro',
+    'gemini-2.0-flash'
+  ];
 
   const runScript = async () => {
     setIsRunning(true);
     setLogs([]);
+    setShowForm(false);
     
     try {
+      // Prepare params based on action
+      const params = action === 'seed' 
+        ? {
+            targetRecipes: parseInt(targetRecipes),
+            batchSize: parseInt(batchSize),
+            model
+          }
+        : undefined;
+      
       // Start script execution
       const response = await fetch('/api/admin/scripts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, params: action === 'seed' ? { count: 20 } : undefined }),
+        body: JSON.stringify({ action, params }),
       });
 
       if (!response.ok) {
@@ -65,10 +90,23 @@ function ScriptModal({ isOpen, onClose, action }: ScriptModalProps) {
   };
 
   useEffect(() => {
-    if (isOpen && !executionId) {
+    if (isOpen && !executionId && !showForm) {
       runScript();
     }
-  }, [isOpen]);
+  }, [isOpen, showForm]);
+  
+  useEffect(() => {
+    // Reset state when modal closes
+    if (!isOpen) {
+      setLogs([]);
+      setExecutionId(null);
+      setIsRunning(false);
+      setShowForm(action === 'seed');
+      setTargetRecipes('20');
+      setBatchSize('2');
+      setModel('gemini-2.5-flash');
+    }
+  }, [isOpen, action]);
 
   if (!isOpen) return null;
 
@@ -77,7 +115,7 @@ function ScriptModal({ isOpen, onClose, action }: ScriptModalProps) {
       <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] flex flex-col">
         <div className="flex justify-between items-center p-6 border-b">
           <h2 className="text-2xl font-bold text-gray-800">
-            {action === 'seed' ? 'Ejecutando Seed' : 'Ejecutando Cleanup'}
+            {action === 'seed' ? 'Ejecutando Seed' : action === 'cleanup' ? 'Ejecutando Cleanup' : 'Limpiando Recetas Vacías'}
           </h2>
           <button
             onClick={onClose}
@@ -88,40 +126,118 @@ function ScriptModal({ isOpen, onClose, action }: ScriptModalProps) {
           </button>
         </div>
 
-        <div className="flex-1 overflow-auto p-6">
-          <div className="bg-gray-900 rounded-lg p-4 font-mono text-sm text-green-400 min-h-[400px]">
-            {logs.length === 0 && isRunning && (
-              <div className="text-yellow-400">Iniciando script...</div>
-            )}
-            {logs.map((log, index) => (
-              <div key={index} className="mb-1">
-                {log}
+        <div className="flex-1 overflow-auto p-6">{showForm ? (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  ¿Cuántas recetas deseas generar?
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={targetRecipes}
+                  onChange={(e) => setTargetRecipes(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                  placeholder="Ejemplo: 20"
+                />
               </div>
-            ))}
-            {!isRunning && logs.length > 0 && (
-              <div className="mt-4 text-blue-400">Script completado.</div>
-            )}
-          </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  ¿Cuál es el tamaño del batch?
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={batchSize}
+                  onChange={(e) => setBatchSize(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                  placeholder="Ejemplo: 2"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Selecciona el modelo de Gemini
+                </label>
+                <select
+                  value={model}
+                  onChange={(e) => setModel(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                >
+                  {models.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  onClick={onClose}
+                  className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={runScript}
+                  className="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+                >
+                  Ejecutar Seed
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-gray-900 rounded-lg p-4 font-mono text-sm text-green-400 min-h-[400px]">
+              {logs.length === 0 && isRunning && (
+                <div className="text-yellow-400">Iniciando script...</div>
+              )}
+              {logs.map((log, index) => (
+                <div key={index} className="mb-1">
+                  {log}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
-        <div className="p-6 border-t flex justify-end gap-4">
-          <button
-            onClick={onClose}
-            disabled={isRunning}
-            className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-semibold disabled:opacity-50 text-gray-700"
-          >
-            {isRunning ? 'Ejecutando...' : 'Cerrar'}
-          </button>
+        <div className="p-6 border-t">
+          <div className="flex justify-between items-center">
+            <div className="text-sm text-gray-600">
+              {isRunning ? (
+                <span className="flex items-center">
+                  <span className="animate-pulse mr-2">●</span>
+                  Ejecutando...
+                </span>
+              ) : logs.length > 0 ? (
+                'Completado'
+              ) : showForm ? (
+                'Configura los parámetros'
+              ) : (
+                'Listo para ejecutar'
+              )}
+            </div>
+            {!showForm && (
+              <button
+                onClick={onClose}
+                disabled={isRunning}
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50"
+              >
+                Cerrar
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-export default function AdminDashboard() {
+export default function AdminPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [scriptModal, setScriptModal] = useState<{ isOpen: boolean; action: 'seed' | 'cleanup' | null }>({
+  const [scriptModal, setScriptModal] = useState<{ isOpen: boolean; action: 'seed' | 'cleanup' | 'cleanup-empty' | null }>({
     isOpen: false,
     action: null,
   });
@@ -208,7 +324,7 @@ export default function AdminDashboard() {
       {/* Scripts Section */}
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-2xl font-bold text-gray-800 mb-4">Scripts de Mantenimiento</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="border border-gray-200 rounded-lg p-4">
             <h3 className="font-semibold text-gray-800 mb-2">🌱 Seed Database</h3>
             <p className="text-sm text-gray-600 mb-4">
@@ -232,6 +348,19 @@ export default function AdminDashboard() {
               className="w-full px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors font-semibold"
             >
               Ejecutar Cleanup
+            </button>
+          </div>
+
+          <div className="border border-gray-200 rounded-lg p-4">
+            <h3 className="font-semibold text-gray-800 mb-2">🗑️ Limpiar Recetas Vacías</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Elimina recetas que no tienen ingredientes asociados
+            </p>
+            <button
+              onClick={() => setScriptModal({ isOpen: true, action: 'cleanup-empty' })}
+              className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-semibold"
+            >
+              Limpiar Recetas Vacías
             </button>
           </div>
         </div>
