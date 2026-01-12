@@ -11,11 +11,15 @@ export async function GET() {
       cook_time: number;
       difficulty: string;
       servings: number | null;
+      rating_count: number;
+      rating_sum: number;
+      average_rating: number;
       country_name: string;
       country_code: string;
       created_at: Date;
     }>(
       `SELECT r.id, r.title, r.prep_time, r.cook_time, r.difficulty, r.servings, 
+              r.rating_count, r.rating_sum, r.average_rating,
               c.name as country_name, c.code as country_code, r.created_at 
        FROM recipes r
        INNER JOIN countries c ON r.country_id = c.id
@@ -61,6 +65,9 @@ export async function GET() {
         instructions: instructions.map(i => i.instruction),
         difficulty: recipe.difficulty,
         servings: recipe.servings ?? undefined,
+        rating_count: recipe.rating_count,
+        rating_sum: recipe.rating_sum,
+        average_rating: recipe.average_rating,
         country: recipe.country_code.toLowerCase(),
         created_at: recipe.created_at,
       },

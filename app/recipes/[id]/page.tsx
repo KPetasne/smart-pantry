@@ -16,9 +16,12 @@ async function getRecipe(id: number) {
       cook_time: number;
       difficulty: string;
       servings: number | null;
+      rating_count: number;
+      rating_sum: number;
+      average_rating: number;
       created_at: Date;
     }>(
-      'SELECT id, title, prep_time, cook_time, difficulty, servings, created_at FROM recipes WHERE id = $1',
+      'SELECT id, title, prep_time, cook_time, difficulty, servings, rating_count, rating_sum, average_rating, created_at FROM recipes WHERE id = $1',
       [id]
     );
 
@@ -55,6 +58,9 @@ async function getRecipe(id: number) {
       instructions: instructions.map(i => i.instruction),
       difficulty: recipe.difficulty as 'easy' | 'medium' | 'hard',
       servings: recipe.servings ?? undefined,
+      rating_count: recipe.rating_count,
+      rating_sum: recipe.rating_sum,
+      average_rating: recipe.average_rating,
       created_at: recipe.created_at.toISOString(),
     };
   } catch (error) {

@@ -25,8 +25,8 @@ export class GeminiService {
     this.model = genAI.getGenerativeModel({ model: modelName });
   }
 
-  async generateRecipe(ingredients?: string[], country: Country = 'argentina', language: string = 'es'): Promise<GeneratedRecipe> {
-    const prompt = getPrompt(country, ingredients);
+  async generateRecipe(ingredients?: string[], country: Country = 'argentina', language: string = 'es', existingTitles?: string[]): Promise<GeneratedRecipe> {
+    const prompt = getPrompt(country, ingredients, existingTitles);
     
     try {
       const result = await this.model.generateContent(prompt);

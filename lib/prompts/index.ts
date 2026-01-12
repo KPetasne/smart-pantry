@@ -27,14 +27,24 @@ export const countryPrompts: Record<Country, CountryPrompts> = {
 
 export const getPrompt = (
   country: Country,
-  ingredients?: string[]
+  ingredients?: string[],
+  existingTitles?: string[]
 ): string => {
   const prompts = countryPrompts[country];
   if (!prompts) {
     throw new Error(`No prompts found for country: ${country}`);
   }
   
-  return ingredients && ingredients.length > 0
+  let basePrompt = ingredients && ingredients.length > 0
     ? prompts.withIngredients(ingredients)
     : prompts.random();
+  
+  // Add existing titles to avoid duplicates
+  if (existingTitles && existingTitles.length > 0) {
+    const recentTitles = existingTitles.slice(-100); // Last 100 recipes
+    const titlesWarning = `\n\nIMPORTANTE: EVITA generar recetas con títulos similares a estos que ya existen:\n${recentTitles.join(', ')}\n\nGenera un plato DIFERENTE y ORIGINAL.`;
+    basePrompt += titlesWarning;
+  }
+  
+  return basePrompt;
 };

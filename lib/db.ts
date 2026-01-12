@@ -21,6 +21,9 @@ export interface Recipe {
   title: string;
   instructions: any; // JSONB
   difficulty: 'easy' | 'medium' | 'hard';
+  rating_count?: number;
+  rating_sum?: number;
+  average_rating?: number;
   created_at: Date;
 }
 

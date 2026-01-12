@@ -1,4 +1,6 @@
 import { UserGroupIcon, ClockIcon, FireIcon } from '@heroicons/react/24/outline';
+import DifficultyBadge from './DifficultyBadge';
+import RatingStars from './RatingStars';
 
 interface RecipeDetailProps {
   recipe: {
@@ -10,31 +12,30 @@ interface RecipeDetailProps {
     instructions: string[];
     difficulty: 'easy' | 'medium' | 'hard';
     servings?: number;
+    rating_count?: number;
+    average_rating?: number;
     created_at: string;
   };
 }
 
 export default function RecipeDetail({ recipe }: RecipeDetailProps) {
-  const difficultyColors = {
-    easy: 'bg-green-100 text-green-800',
-    medium: 'bg-yellow-100 text-yellow-800',
-    hard: 'bg-red-100 text-red-800',
-  };
-
-  const difficultyLabels = {
-    easy: 'Fácil',
-    medium: 'Medio',
-    hard: 'Difícil',
-  };
-
   return (
     <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-lg p-6 md:p-8">
       <div className="mb-6">
-        <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">{recipe.title}</h1>
+        <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">{recipe.title}</h1>
+        
+        {/* Rating Section */}
+        <div className="mb-4">
+          <RatingStars 
+            average={recipe.average_rating} 
+            count={recipe.rating_count} 
+            recipeId={recipe.id}
+            interactive={true}
+          />
+        </div>
+
         <div className="flex flex-wrap items-center gap-4">
-          <span className={`px-3 py-1 rounded-full text-sm font-semibold ${difficultyColors[recipe.difficulty]}`}>
-            {difficultyLabels[recipe.difficulty]}
-          </span>
+          <DifficultyBadge difficulty={recipe.difficulty} />
           {recipe.servings && (
             <div className="flex items-center gap-1.5 text-gray-600">
               <UserGroupIcon className="w-5 h-5" />

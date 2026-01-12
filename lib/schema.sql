@@ -7,6 +7,9 @@ CREATE TABLE IF NOT EXISTS recipes (
   servings INTEGER CHECK (servings >= 1 AND servings <= 12),
   language VARCHAR(5) DEFAULT 'es' NOT NULL,
   country VARCHAR(50) DEFAULT 'argentina' NOT NULL,
+  rating_count INT DEFAULT 0,
+  rating_sum INT DEFAULT 0,
+  average_rating DECIMAL(3,2) DEFAULT 0.00,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -46,6 +49,16 @@ CREATE TABLE IF NOT EXISTS admin_users (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Create recipe_ratings table for tracking user ratings
+CREATE TABLE IF NOT EXISTS recipe_ratings (
+  id SERIAL PRIMARY KEY,
+  recipe_id INT NOT NULL REFERENCES recipes(id) ON DELETE CASCADE,
+  session_id VARCHAR(255) NOT NULL,
+  rating INT NOT NULL CHECK (rating BETWEEN 1 AND 5),
+  ip_address VARCHAR(45),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Create indexes for performance
 CREATE INDEX IF NOT EXISTS idx_ingredients_name ON ingredients(name);
 CREATE INDEX IF NOT EXISTS idx_recipe_ingredients_recipe_id ON recipe_ingredients(recipe_id);
@@ -54,3 +67,5 @@ CREATE INDEX IF NOT EXISTS idx_recipes_difficulty ON recipes(difficulty);
 CREATE INDEX IF NOT EXISTS idx_recipes_language ON recipes(language);
 CREATE INDEX IF NOT EXISTS idx_recipes_country ON recipes(country);
 CREATE INDEX IF NOT EXISTS idx_search_analytics_timestamp ON search_analytics(timestamp);
+CREATE INDEX IF NOT EXISTS idx_recipe_ratings_recipe_session ON recipe_ratings(recipe_id, session_id);
+CREATE INDEX IF NOT EXISTS idx_recipe_ratings_created_at ON recipe_ratings(created_at);

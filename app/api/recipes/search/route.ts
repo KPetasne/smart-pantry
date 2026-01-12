@@ -36,6 +36,9 @@ export async function POST(request: Request) {
       servings: number | null;
       country_name: string;
       country_code: string;
+      rating_count: number;
+      rating_sum: number;
+      average_rating: number;
       created_at: Date;
       match_count: number;
     }>(
@@ -48,6 +51,9 @@ export async function POST(request: Request) {
         r.servings,
         c.name as country_name,
         c.code as country_code,
+        r.rating_count,
+        r.rating_sum,
+        r.average_rating,
         r.created_at,
         COUNT(ri.ingredient_id) as match_count
       FROM recipes r
@@ -55,7 +61,7 @@ export async function POST(request: Request) {
       INNER JOIN ingredients i ON ri.ingredient_id = i.id
       INNER JOIN countries c ON r.country_id = c.id
       WHERE i.name = ANY($1::text[])
-      GROUP BY r.id, r.title, r.prep_time, r.cook_time, r.difficulty, r.servings, c.name, c.code, r.created_at
+      GROUP BY r.id, r.title, r.prep_time, r.cook_time, r.difficulty, r.servings, c.name, c.code, r.rating_count, r.rating_sum, r.average_rating, r.created_at
       HAVING COUNT(DISTINCT i.name) = $2
       ORDER BY r.created_at DESC
       LIMIT 1`,
@@ -99,6 +105,9 @@ export async function POST(request: Request) {
         instructions: instructions.map(i => i.instruction),
         difficulty: recipe.difficulty,
         servings: recipe.servings ?? undefined,
+        rating_count: recipe.rating_count,
+        rating_sum: recipe.rating_sum,
+        average_rating: recipe.average_rating,
         country: recipe.country_code.toLowerCase(),
         created_at: recipe.created_at,
         fromCache: true,

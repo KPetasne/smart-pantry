@@ -220,6 +220,12 @@ export async function seedRecipes(log: LogFunction = console.log, targetRecipes:
   log(`Current recipes in database: ${existingCount}`);
   log(`Will generate ${targetRecipes} new recipes...`);
   
+  // Get existing recipe titles to avoid duplicates
+  log('Fetching existing recipe titles to avoid duplicates...');
+  const existingTitles = await query<{ title: string }>('SELECT title FROM recipes');
+  const existingTitlesList = existingTitles.map(r => r.title);
+  log(`Found ${existingTitlesList.length} existing recipe titles`);
+  
   const recipesToGenerate = targetRecipes;
   log(`Generating ${recipesToGenerate} new recipes from all countries...`);
 
@@ -234,8 +240,8 @@ export async function seedRecipes(log: LogFunction = console.log, targetRecipes:
         // Select random country
         const randomCountry = countries[Math.floor(Math.random() * countries.length)];
         
-        // Generate recipe with Gemini in Spanish for random country
-        const generatedRecipe = await geminiService.generateRecipe(undefined, randomCountry, 'es');
+        // Generate recipe with Gemini in Spanish for random country, passing existing titles
+        const generatedRecipe = await geminiService.generateRecipe(undefined, randomCountry, 'es', existingTitlesList);
         
         // Validate and normalize
         const validatedRecipe = validateRecipeData(generatedRecipe);
