@@ -217,13 +217,13 @@ export default function GenerateImagesPage() {
 
           <button
             onClick={handlePreview}
-            disabled={loading || (stats && stats.remaining < count)}
+            disabled={loading || (stats !== null && stats.remaining < count)}
             className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-medium"
           >
             {loading ? 'Cargando...' : 'Previsualizar Recetas'}
           </button>
 
-          {stats && stats.remaining < count && (
+          {stats !== null && stats.remaining < count && (
             <p className="text-sm text-red-600 mt-2">
               No hay suficientes generaciones disponibles este mes
             </p>

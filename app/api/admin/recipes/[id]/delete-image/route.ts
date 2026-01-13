@@ -6,7 +6,7 @@ import { StorageService } from '@/lib/storage-service';
 // DELETE - Delete image from a recipe
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
   
@@ -14,8 +14,10 @@ export async function DELETE(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  const resolvedParams = await params;
+
   try {
-    const recipeId = parseInt(params.id);
+    const recipeId = parseInt(resolvedParams.id);
 
     if (isNaN(recipeId)) {
       return NextResponse.json({ error: 'Invalid recipe ID' }, { status: 400 });
