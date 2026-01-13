@@ -20,8 +20,9 @@ async function getRecipe(id: number) {
       rating_sum: number;
       average_rating: number;
       created_at: Date;
+      image_url: string | null;
     }>(
-      'SELECT id, title, prep_time, cook_time, difficulty, servings, rating_count, rating_sum, average_rating, created_at FROM recipes WHERE id = $1',
+      'SELECT id, title, prep_time, cook_time, difficulty, servings, rating_count, rating_sum, average_rating, created_at, image_url FROM recipes WHERE id = $1',
       [id]
     );
 
@@ -62,6 +63,7 @@ async function getRecipe(id: number) {
       rating_sum: recipe.rating_sum,
       average_rating: recipe.average_rating,
       created_at: recipe.created_at.toISOString(),
+      image_url: recipe.image_url ?? undefined,
     };
   } catch (error) {
     console.error('Error fetching recipe:', error);

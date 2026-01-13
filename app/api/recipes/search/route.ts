@@ -40,6 +40,7 @@ export async function POST(request: Request) {
       rating_sum: number;
       average_rating: number;
       created_at: Date;
+      image_url: string | null;
       match_count: number;
     }>(
       `SELECT 
@@ -55,13 +56,14 @@ export async function POST(request: Request) {
         r.rating_sum,
         r.average_rating,
         r.created_at,
+        r.image_url,
         COUNT(ri.ingredient_id) as match_count
       FROM recipes r
       INNER JOIN recipe_ingredients ri ON r.id = ri.recipe_id
       INNER JOIN ingredients i ON ri.ingredient_id = i.id
       INNER JOIN countries c ON r.country_id = c.id
       WHERE i.name = ANY($1::text[])
-      GROUP BY r.id, r.title, r.prep_time, r.cook_time, r.difficulty, r.servings, c.name, c.code, r.rating_count, r.rating_sum, r.average_rating, r.created_at
+      GROUP BY r.id, r.title, r.prep_time, r.cook_time, r.difficulty, r.servings, c.name, c.code, r.rating_count, r.rating_sum, r.average_rating, r.created_at, r.image_url
       HAVING COUNT(DISTINCT i.name) = $2
       ORDER BY r.created_at DESC
       LIMIT 1`,
@@ -110,6 +112,7 @@ export async function POST(request: Request) {
         average_rating: recipe.average_rating,
         country: recipe.country_code.toLowerCase(),
         created_at: recipe.created_at,
+        image_url: recipe.image_url ?? undefined,
         fromCache: true,
       });
     }

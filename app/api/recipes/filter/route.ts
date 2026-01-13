@@ -15,7 +15,7 @@ export async function POST(request: Request) {
 
     let queryText = `
       SELECT r.id, r.title, r.prep_time, r.cook_time, r.difficulty, r.servings, 
-             r.rating_count, r.rating_sum, r.average_rating,
+             r.rating_count, r.rating_sum, r.average_rating, r.image_url,
              c.name as country_name, c.code as country_code, r.created_at
       FROM recipes r
       INNER JOIN countries c ON r.country_id = c.id
@@ -95,6 +95,7 @@ export async function POST(request: Request) {
         base.rating_count,
         base.rating_sum,
         base.average_rating,
+        base.image_url,
         base.country_name,
         base.country_code,
         base.created_at,
@@ -115,7 +116,7 @@ export async function POST(request: Request) {
       LEFT JOIN instructions i ON base.id = i.recipe_id
       LEFT JOIN recipe_ingredients ri ON base.id = ri.recipe_id
       GROUP BY base.id, base.title, base.prep_time, base.cook_time, base.difficulty, base.servings,
-               base.rating_count, base.rating_sum, base.average_rating, base.country_name, base.country_code, base.created_at
+               base.rating_count, base.rating_sum, base.average_rating, base.image_url, base.country_name, base.country_code, base.created_at
     `;
 
     const recipes = await query<{
@@ -128,6 +129,7 @@ export async function POST(request: Request) {
       rating_count: number;
       rating_sum: number;
       average_rating: number;
+      image_url: string | null;
       country_name: string;
       country_code: string;
       created_at: Date;
@@ -148,6 +150,7 @@ export async function POST(request: Request) {
       rating_count: recipe.rating_count,
       rating_sum: recipe.rating_sum,
       average_rating: recipe.average_rating,
+      image_url: recipe.image_url ?? undefined,
       country: recipe.country_code.toLowerCase(),
       created_at: recipe.created_at,
     }));

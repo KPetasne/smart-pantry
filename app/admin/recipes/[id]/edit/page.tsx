@@ -16,6 +16,8 @@ export default function EditRecipePage({ params }: EditRecipePageProps) {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [error, setError] = useState('');
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [deletingImage, setDeletingImage] = useState(false);
   
   const [formData, setFormData] = useState({
     title: '',
@@ -48,6 +50,7 @@ export default function EditRecipePage({ params }: EditRecipePageProps) {
         language: recipe.language,
         country: recipe.country,
       });
+      setImageUrl(recipe.image_url || null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar la receta');
     } finally {
@@ -109,6 +112,31 @@ export default function EditRecipePage({ params }: EditRecipePageProps) {
     }
   };
 
+  const handleDeleteImage = async () => {
+    if (!confirm('¿Estás seguro de que quieres eliminar la imagen de esta receta?')) {
+      return;
+    }
+
+    setDeletingImage(true);
+    
+    try {
+      const response = await fetch(`/api/admin/recipes/${resolvedParams.id}/delete-image`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al eliminar la imagen');
+      }
+
+      setImageUrl(null);
+      alert('Imagen eliminada exitosamente');
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Error al eliminar la imagen');
+    } finally {
+      setDeletingImage(false);
+    }
+  };
+
   if (fetching) {
     return (
       <div className="flex justify-center items-center py-12">
@@ -125,6 +153,33 @@ export default function EditRecipePage({ params }: EditRecipePageProps) {
         </Link>
         <h1 className="text-3xl font-bold text-gray-800">Editar Receta</h1>
       </div>
+
+      {/* Image Section */}
+      {imageUrl && (
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">Imagen de la Receta</h2>
+          <div className="flex items-start gap-4">
+            <img
+              src={imageUrl}
+              alt="Recipe preview"
+              className="w-48 h-36 object-cover rounded-lg"
+            />
+            <div className="flex-1">
+              <p className="text-sm text-gray-600 mb-3">
+                Esta receta tiene una imagen generada por IA. Puedes eliminarla si deseas generar una nueva.
+              </p>
+              <button
+                type="button"
+                onClick={handleDeleteImage}
+                disabled={deletingImage}
+                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-sm"
+              >
+                {deletingImage ? 'Eliminando...' : 'Eliminar Imagen'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="bg-white rounded-lg shadow p-6">
         <form onSubmit={handleSubmit} className="space-y-6">

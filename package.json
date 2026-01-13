@@ -12,11 +12,13 @@
     "lint": "next lint",
     "seed": "tsx scripts/seed.ts",
     "cleanup": "tsx scripts/cleanup-duplicates.ts",
-    "init-admin": "tsx scripts/init-admin.ts"
+    "init-admin": "tsx scripts/init-admin.ts",
+    "add-image-columns": "tsx scripts/add-image-columns.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.23.0",
     "@heroicons/react": "^2.2.0",
+    "@supabase/supabase-js": "^2.39.0",
     "@types/bcryptjs": "^3.0.0",
     "bcryptjs": "^3.0.3",
     "dotenv": "^16.4.7",
@@ -25,6 +27,7 @@
     "pg": "^8.13.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "sharp": "^0.33.1",
     "zod": "^3.24.1"
   },
   "devDependencies": {

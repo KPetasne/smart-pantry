@@ -14,6 +14,7 @@ export async function GET() {
       rating_count: number;
       rating_sum: number;
       average_rating: number;
+      image_url: string | null;
       country_name: string;
       country_code: string;
       created_at: Date;
@@ -30,6 +31,7 @@ export async function GET() {
         r.rating_count,
         r.rating_sum,
         r.average_rating,
+        r.image_url,
         c.name as country_name,
         c.code as country_code,
         r.created_at,
@@ -51,7 +53,7 @@ export async function GET() {
        LEFT JOIN instructions i ON r.id = i.recipe_id
        LEFT JOIN recipe_ingredients ri ON r.id = ri.recipe_id
        GROUP BY r.id, r.title, r.prep_time, r.cook_time, r.difficulty, r.servings,
-                r.rating_count, r.rating_sum, r.average_rating, c.name, c.code, r.created_at
+                r.rating_count, r.rating_sum, r.average_rating, r.image_url, c.name, c.code, r.created_at
        ORDER BY RANDOM() 
        LIMIT 1`
     );
@@ -78,6 +80,7 @@ export async function GET() {
         rating_count: recipe.rating_count,
         rating_sum: recipe.rating_sum,
         average_rating: recipe.average_rating,
+        image_url: recipe.image_url ?? undefined,
         country: recipe.country_code.toLowerCase(),
         created_at: recipe.created_at,
       },
