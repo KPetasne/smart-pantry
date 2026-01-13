@@ -59,20 +59,21 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
     let targetPath: string | null = null;
     
     setNavigationStack((prev) => {
-      if (prev.length <= 1) {
-        // If only one or no items, go to home
+      if (prev.length === 0) {
+        // No history, go to home
         targetPath = '/';
-        const newStack: string[] = [];
-        if (typeof window !== 'undefined') {
-          sessionStorage.setItem(STORAGE_KEY, JSON.stringify(newStack));
-        }
-        return newStack;
+        return [];
       }
       
-      // Remove current page (last item) and previous page (second to last)
-      const newStack = prev.slice(0, -2);
-      // Get the page we should navigate to (what was before the previous page)
-      targetPath = newStack.length > 0 ? newStack[newStack.length - 1] : '/';
+      if (prev.length === 1) {
+        // Only one item in history (probably home), stay there or go to home
+        targetPath = prev[0] === '/' ? '/' : '/';
+        return [];
+      }
+      
+      // Remove the last item (where we came from) and go to it
+      const newStack = prev.slice(0, -1);
+      targetPath = prev[prev.length - 1]; // The page we're removing is where we go back to
       
       if (typeof window !== 'undefined') {
         sessionStorage.setItem(STORAGE_KEY, JSON.stringify(newStack));
