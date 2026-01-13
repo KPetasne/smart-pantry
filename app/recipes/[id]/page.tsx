@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import RecipeDetail from '@/components/RecipeDetail';
-import Link from 'next/link';
+import Header from '@/components/Header';
+import SmartBackButton from '@/components/SmartBackButton';
 import { query } from '@/lib/db';
 
 interface PageProps {
@@ -86,13 +87,14 @@ export default async function RecipePage({ params }: PageProps) {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-blancoCrema to-white">
-      <div className="container mx-auto px-4 py-8 md:py-12">
-        <Link href="/" className="text-terracota hover:text-terracota/90 mb-6 inline-block">
-          ← Volver a LACENA
-        </Link>
+    <>
+      <Header variant="standard" />
+      <main className="min-h-screen bg-gradient-to-b from-blancoCrema to-white">
+        <div className="container mx-auto px-4 py-8 md:py-12">
+          <SmartBackButton />
         <RecipeDetail recipe={recipe} />
       </div>
     </main>
+    </>
   );
 }

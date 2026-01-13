@@ -4,7 +4,11 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 
-export default function Header() {
+interface HeaderProps {
+  variant?: 'home' | 'standard';
+}
+
+export default function Header({ variant = 'home' }: HeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const scrollToSection = (sectionId: string) => {
@@ -24,44 +28,48 @@ export default function Header() {
             LACENA
           </Link>
 
-          {/* Desktop Menu */}
-          <nav className="hidden md:flex items-center gap-6">
-            <button
-              onClick={() => scrollToSection('inspiracion')}
-              className="text-carbon hover:text-terracota transition-colors font-medium"
-            >
-              Inspiración
-            </button>
-            <button
-              onClick={() => scrollToSection('buscador')}
-              className="text-carbon hover:text-terracota transition-colors font-medium"
-            >
-              Buscador
-            </button>
-            <button
-              onClick={() => scrollToSection('planificador')}
-              className="text-carbon hover:text-terracota transition-colors font-medium"
-            >
-              Planificador
-            </button>
-          </nav>
+          {variant === 'home' && (
+            <>
+              {/* Desktop Menu */}
+              <nav className="hidden md:flex items-center gap-6">
+                <button
+                  onClick={() => scrollToSection('inspiracion')}
+                  className="text-carbon hover:text-terracota transition-colors font-medium"
+                >
+                  Inspiración
+                </button>
+                <button
+                  onClick={() => scrollToSection('buscador')}
+                  className="text-carbon hover:text-terracota transition-colors font-medium"
+                >
+                  Buscador
+                </button>
+                <button
+                  onClick={() => scrollToSection('planificador')}
+                  className="text-carbon hover:text-terracota transition-colors font-medium"
+                >
+                  Planificador
+                </button>
+              </nav>
 
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="md:hidden p-2 text-carbon hover:text-terracota transition-colors"
-            aria-label="Toggle menu"
-          >
-            {isMenuOpen ? (
-              <XMarkIcon className="w-6 h-6" />
-            ) : (
-              <Bars3Icon className="w-6 h-6" />
-            )}
-          </button>
+              {/* Mobile Menu Button */}
+              <button
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className="md:hidden p-2 text-carbon hover:text-terracota transition-colors"
+                aria-label="Toggle menu"
+              >
+                {isMenuOpen ? (
+                  <XMarkIcon className="w-6 h-6" />
+                ) : (
+                  <Bars3Icon className="w-6 h-6" />
+                )}
+              </button>
+            </>
+          )}
         </div>
 
         {/* Mobile Menu */}
-        {isMenuOpen && (
+        {variant === 'home' && isMenuOpen && (
           <nav className="md:hidden py-4 border-t border-salvia/30">
             <div className="flex flex-col gap-3">
               <button
