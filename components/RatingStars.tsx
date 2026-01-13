@@ -141,7 +141,7 @@ export default function RatingStars({
       <span className="text-sm text-gray-600">
         {localCount > 0 ? (
           <>
-            {localAverage.toFixed(1)} ({localCount} {localCount === 1 ? 'voto' : 'votos'})
+            {Number(localAverage || 0).toFixed(1)} ({localCount} {localCount === 1 ? 'voto' : 'votos'})
           </>
         ) : (
           '(Sin votos)'
