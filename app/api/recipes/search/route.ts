@@ -166,6 +166,12 @@ export async function POST(request: Request) {
 
       // Insert ingredients and relationships
       for (const ingredientName of validatedRecipe.ingredients) {
+        // Validate that ingredientName is a string
+        if (typeof ingredientName !== 'string' || !ingredientName.trim()) {
+          console.warn(`Skipping invalid ingredient: ${ingredientName}`);
+          continue;
+        }
+        
         const normalizedName = ingredientName.trim().toLowerCase();
         
         let ingredientId: number;
