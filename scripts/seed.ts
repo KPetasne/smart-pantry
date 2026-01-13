@@ -169,22 +169,30 @@ async function insertRecipe(recipe: RecipeData, language: string = 'es', country
 
   // Insert instructions into separate table
   for (let i = 0; i < recipe.instructions.length; i++) {
-    const instruction = String(recipe.instructions[i] || '').trim();
-    if (!instruction) continue; // Skip empty instructions
+    const instruction = recipe.instructions[i];
+    
+    // Validate instruction is a string
+    if (typeof instruction !== 'string' || !instruction.trim()) {
+      console.warn(`Skipping invalid instruction at position ${i + 1}`);
+      continue;
+    }
     
     await execute(
       `INSERT INTO instructions (recipe_id, step_number, instruction) 
        VALUES ($1, $2, $3)`,
-      [recipeId, i + 1, instruction]
+      [recipeId, i + 1, instruction.trim()]
     );
   }
 
   // Insert ingredients and relationships
   for (const ingredientName of recipe.ingredients) {
-    // Ensure ingredient is a string
-    const ingredientStr = String(ingredientName || '').trim();
-    if (!ingredientStr) continue; // Skip empty ingredients
+    // Validate ingredient is a string
+    if (typeof ingredientName !== 'string' || !ingredientName.trim()) {
+      console.warn(`Skipping invalid ingredient: ${ingredientName}`);
+      continue;
+    }
     
+    const ingredientStr = ingredientName.trim();
     const ingredientId = await getOrCreateIngredient(ingredientStr);
     
     // Truncate quantity to 150 characters (database limit)
