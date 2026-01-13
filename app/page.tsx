@@ -1,6 +1,7 @@
 import RandomRecipe from '@/components/RandomRecipe';
 import PremiumBanner from '@/components/PremiumBanner';
 import Header from '@/components/Header';
+import RecipeAutocomplete from '@/components/RecipeAutocomplete';
 import Link from 'next/link';
 
 export default function Home() {
@@ -31,9 +32,19 @@ export default function Home() {
           <div id="buscador" className="max-w-2xl mx-auto mb-8 scroll-mt-20">
             <div className="text-center mb-6">
               <h3 className="text-xl font-semibold text-gray-700 mb-2">
-                Encuentra tu próxima receta
+                Buscá tu receta favorita
               </h3>
+              <p className="text-sm text-gray-500 mb-4">
+                Encontrá esa receta que te encantó
+              </p>
             </div>
+            
+            <RecipeAutocomplete />
+            
+            <div className="text-center my-6">
+              <span className="text-sm text-gray-400">o</span>
+            </div>
+            
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 href="/search"
