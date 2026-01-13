@@ -123,7 +123,7 @@ export default function RatingStars({
         >
           <StarComponent 
             className={`w-5 h-5 ${
-              isFilled ? 'text-yellow-400' : 'text-gray-300'
+              isFilled ? 'text-laton' : 'text-gray-300'
             }`}
           />
         </button>

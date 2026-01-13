@@ -50,19 +50,19 @@ export default function RecipeDetail({ recipe }: RecipeDetailProps) {
           <div className="flex flex-wrap items-center gap-4">
             <DifficultyBadge difficulty={recipe.difficulty} />
             {recipe.servings && (
-              <div className="flex items-center gap-1.5 text-carbon/70">
+              <div className="flex items-center gap-1.5 text-salvia">
                 <UserGroupIcon className="w-5 h-5" />
                 <span className="text-sm font-medium">{recipe.servings} {recipe.servings === 1 ? 'porción' : 'porciones'}</span>
               </div>
             )}
             {recipe.prepTime && (
-              <div className="flex items-center gap-1.5 text-carbon/70">
+              <div className="flex items-center gap-1.5 text-salvia">
                 <ClockIcon className="w-5 h-5" />
                 <span className="text-sm font-medium">{recipe.prepTime} min prep</span>
               </div>
             )}
             {recipe.cookTime && (
-              <div className="flex items-center gap-1.5 text-carbon/70">
+              <div className="flex items-center gap-1.5 text-salvia">
                 <FireIcon className="w-5 h-5" />
                 <span className="text-sm font-medium">{recipe.cookTime} min cocción</span>
               </div>
@@ -84,7 +84,7 @@ export default function RecipeDetail({ recipe }: RecipeDetailProps) {
           <ol className="space-y-4">
             {recipe.instructions.map((instruction, index) => (
               <li key={index} className="flex gap-4">
-                <span className="flex-shrink-0 w-8 h-8 bg-terracota text-white rounded-full flex items-center justify-center font-bold">
+                <span className="flex-shrink-0 w-8 h-8 bg-madera text-white rounded-full flex items-center justify-center font-bold">
                   {index + 1}
                 </span>
                 <p className="text-carbon/70 text-lg flex-1 pt-1">{instruction}</p>

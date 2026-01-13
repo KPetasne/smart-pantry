@@ -248,7 +248,7 @@ export default function GenerateImagesPage() {
                   <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Dificultad</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-salvia/30">
                 {previewRecipes.map((recipe) => (
                   <tr key={recipe.id}>
                     <td className="px-4 py-2 text-sm text-gray-900">{recipe.id}</td>

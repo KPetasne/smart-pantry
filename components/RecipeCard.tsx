@@ -32,7 +32,7 @@ export default function RecipeCard({
 }: RecipeCardProps) {
   return (
     <Link href={`/recipes/${id}`} className="block mb-6 last:mb-0">
-      <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer border border-carbon/10 overflow-hidden">
+      <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer border border-salvia/30 overflow-hidden">
         {image_url && (
           <div className="w-full h-48 relative">
             <img
@@ -48,13 +48,13 @@ export default function RecipeCard({
           <div className="mb-3 flex flex-wrap items-center gap-3">
             <DifficultyBadge difficulty={difficulty} />
             {servings && (
-              <div className="flex items-center gap-1 text-carbon/70">
+              <div className="flex items-center gap-1 text-salvia">
                 <UserGroupIcon className="w-4 h-4" />
                 <span className="text-sm font-medium">{servings}</span>
               </div>
             )}
             {(prepTime || cookTime) && (
-              <div className="flex items-center gap-1 text-carbon/70">
+              <div className="flex items-center gap-1 text-salvia">
                 <ClockIcon className="w-4 h-4" />
                 <span className="text-sm font-medium">{(prepTime || 0) + (cookTime || 0)} min</span>
               </div>

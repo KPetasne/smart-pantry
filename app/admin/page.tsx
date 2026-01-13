@@ -438,7 +438,7 @@ export default function AdminPage() {
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-2xl font-bold text-gray-800 mb-4">Scripts de Mantenimiento</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="border border-gray-200 rounded-lg p-4">
+          <div className="border border-salvia/30 rounded-lg p-4">
             <h3 className="font-semibold text-gray-800 mb-2">🌱 Seed Database</h3>
             <p className="text-sm text-gray-600 mb-4">
               Genera nuevas recetas usando Gemini API y las agrega a la base de datos
@@ -451,20 +451,20 @@ export default function AdminPage() {
             </button>
           </div>
 
-          <div className="border border-gray-200 rounded-lg p-4">
+          <div className="border border-salvia/30 rounded-lg p-4">
             <h3 className="font-semibold text-gray-800 mb-2">🧹 Cleanup Duplicates</h3>
             <p className="text-sm text-gray-600 mb-4">
-              Elimina recetas duplicadas, manteniendo la versión más reciente
+              Elimina recetas duplicadas basado en similitud de título
             </p>
             <button
-              onClick={() => setScriptModal({ isOpen: true, action: 'cleanup' })}
-              className="w-full px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors font-semibold"
+              onClick={() => setShowScriptModal({ show: true, action: 'cleanup' })}
+              className="w-full px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors font-semibold"
             >
               Ejecutar Cleanup
             </button>
           </div>
 
-          <div className="border border-gray-200 rounded-lg p-4">
+          <div className="border border-salvia/30 rounded-lg p-4">
             <h3 className="font-semibold text-gray-800 mb-2">🗑️ Limpiar Recetas Vacías</h3>
             <p className="text-sm text-gray-600 mb-4">
               Elimina recetas que no tienen ingredientes asociados
@@ -499,7 +499,7 @@ export default function AdminPage() {
           <p className="text-gray-600 text-center py-8">No hay usuarios registrados</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
+            <table className="min-w-full divide-y divide-salvia/30">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -513,7 +513,7 @@ export default function AdminPage() {
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white divide-y divide-salvia/30">
                 {users.map((user) => (
                   <tr key={user.id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">

@@ -59,7 +59,7 @@ export default function IngredientSearch({ onSearch, loading = false }: Ingredie
               value={ingredient}
               onChange={(e) => handleIngredientChange(index, e.target.value)}
               placeholder={`Ingrediente ${index + 1}`}
-              className="flex-1 px-4 py-2 border border-carbon/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-terracota text-carbon placeholder-gray-400"
+              className="flex-1 px-4 py-2 border border-salvia/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-terracota text-carbon placeholder-gray-400"
               disabled={loading}
             />
             {ingredients.length > 2 && (

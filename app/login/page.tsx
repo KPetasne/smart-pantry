@@ -20,7 +20,7 @@ export default function LoginPage() {
 
   if (status === 'loading') {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-b from-blancoCrema to-white flex items-center justify-center">
         <div className="text-gray-600">Cargando...</div>
       </div>
     );
@@ -52,12 +52,12 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-gradient-to-b from-blancoCrema to-white flex items-center justify-center px-4">
       <div className="max-w-md w-full">
         <div className="bg-white rounded-lg shadow-xl p-8">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">Backoffice</h1>
-            <p className="text-gray-600">Smart Pantry Admin</p>
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">LACENA Backoffice</h1>
+            <p className="text-gray-600">Admin Panel</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">

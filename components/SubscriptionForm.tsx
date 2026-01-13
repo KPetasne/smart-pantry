@@ -52,7 +52,7 @@ export default function SubscriptionForm() {
           onChange={(e) => setEmail(e.target.value)}
           placeholder="tu@email.com"
           required
-          className="w-full px-4 py-2 border border-carbon/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-mostaza text-carbon placeholder-gray-400 bg-white"
+          className="w-full px-4 py-2 border border-salvia/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-laton text-carbon placeholder-gray-400 bg-white"
           disabled={loading}
         />
       </div>
@@ -60,7 +60,7 @@ export default function SubscriptionForm() {
       <button
         type="submit"
         disabled={loading}
-        className="w-full px-6 py-3 bg-mostaza text-carbon rounded-lg hover:bg-mostaza/90 transition-colors font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed"
+        className="w-full px-6 py-3 bg-laton text-white rounded-lg hover:bg-laton/90 transition-colors font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed"
       >
         {loading ? 'Suscribiendo...' : 'Suscribirse a la Lista de Espera'}
       </button>

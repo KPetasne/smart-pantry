@@ -10,9 +10,14 @@ const config: Config = {
     extend: {
       colors: {
         carbon: '#333333',
-        terracota: '#B5522E',
-        mostaza: '#E3B448',
-        smoke: '#F5F5F5',
+        salvia: '#88967D',
+        madera: '#C08C5B',
+        blancoCrema: '#F2EEE6',
+        laton: '#B8862E',
+        terracota: '#BA6B55',
+      },
+      fontFamily: {
+        serif: ['var(--font-playfair)', 'serif'],
       },
     },
   },

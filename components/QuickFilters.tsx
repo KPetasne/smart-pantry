@@ -74,7 +74,7 @@ export default function QuickFilters() {
                 className={`px-4 py-2 rounded-lg transition-colors ${
                   selectedDiet === 'carnivore'
                     ? 'bg-terracota text-white'
-                    : 'bg-smoke text-carbon hover:bg-carbon/10'
+                    : 'bg-blancoCrema text-carbon hover:bg-carbon/10'
                 }`}
               >
                 Carnívoro
@@ -84,7 +84,7 @@ export default function QuickFilters() {
                 className={`px-4 py-2 rounded-lg transition-colors ${
                   selectedDiet === 'vegan'
                     ? 'bg-terracota text-white'
-                    : 'bg-smoke text-carbon hover:bg-carbon/10'
+                    : 'bg-blancoCrema text-carbon hover:bg-carbon/10'
                 }`}
               >
                 Vegano
@@ -102,7 +102,7 @@ export default function QuickFilters() {
                   className={`px-4 py-2 rounded-lg transition-colors ${
                     selectedDifficulty === difficulty
                       ? 'bg-terracota text-white'
-                      : 'bg-smoke text-carbon hover:bg-carbon/10'
+                      : 'bg-blancoCrema text-carbon hover:bg-carbon/10'
                   }`}
                 >
                   {difficulty === 'easy' ? 'Fácil' : difficulty === 'medium' ? 'Medio' : 'Difícil'}

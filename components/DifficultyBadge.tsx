@@ -7,17 +7,17 @@ interface DifficultyBadgeProps {
 const difficultyConfig = {
   easy: {
     icons: 1,
-    color: 'green',
+    color: 'salvia',
     label: 'Fácil',
   },
   medium: {
     icons: 2,
-    color: 'yellow',
+    color: 'laton',
     label: 'Medio',
   },
   hard: {
     icons: 3,
-    color: 'red',
+    color: 'terracota',
     label: 'Difícil',
   },
 };
@@ -26,20 +26,20 @@ export default function DifficultyBadge({ difficulty }: DifficultyBadgeProps) {
   const config = difficultyConfig[difficulty];
   
   const colorClasses = {
-    green: {
-      bg: 'bg-green-100',
-      text: 'text-green-800',
-      icon: 'text-green-600',
+    salvia: {
+      bg: 'bg-salvia/20',
+      text: 'text-salvia',
+      icon: 'text-salvia',
     },
-    yellow: {
-      bg: 'bg-yellow-100',
-      text: 'text-yellow-800',
-      icon: 'text-yellow-600',
+    laton: {
+      bg: 'bg-laton/20',
+      text: 'text-laton',
+      icon: 'text-laton',
     },
-    red: {
-      bg: 'bg-red-100',
-      text: 'text-red-800',
-      icon: 'text-red-600',
+    terracota: {
+      bg: 'bg-terracota/20',
+      text: 'text-terracota',
+      icon: 'text-terracota',
     },
   };
 
