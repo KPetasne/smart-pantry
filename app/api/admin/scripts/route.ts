@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { z } from 'zod';
+import { requireSuperAdmin, requireAdmin } from '@/lib/auth-helpers';
+import { logAuditEvent, getIpAddress, getUserAgent } from '@/lib/audit-logger';
 
 const scriptSchema = z.object({
   action: z.enum(['seed', 'cleanup', 'cleanup-empty', 'create-user']),
@@ -18,11 +20,12 @@ const activeExecutions = new Map<string, { logs: string[]; status: 'running' | '
 
 // POST - Execute script
 export async function POST(request: Request) {
-  const session = await auth();
-  
-  if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  // Require super_admin role for script execution
+  const authResult = await requireSuperAdmin();
+  if (authResult instanceof NextResponse) {
+    return authResult;
   }
+  const adminUser = authResult;
 
   try {
     const body = await request.json();
@@ -30,6 +33,17 @@ export async function POST(request: Request) {
 
     const executionId = `${action}-${Date.now()}`;
     activeExecutions.set(executionId, { logs: [], status: 'running' });
+
+    // Log the action BEFORE execution
+    await logAuditEvent({
+      user: adminUser,
+      action: 'script_executed',
+      resourceType: 'script',
+      resourceId: action,
+      ipAddress: getIpAddress(request),
+      userAgent: getUserAgent(request),
+      details: { action, params, executionId }
+    });
 
     // Execute script asynchronously
     executeScript(executionId, action, params).catch(error => {
@@ -61,10 +75,10 @@ export async function POST(request: Request) {
 
 // GET - Get script execution status and logs
 export async function GET(request: Request) {
-  const session = await auth();
-  
-  if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  // Only require authentication (not super_admin) to view logs
+  const authResult = await requireAdmin();
+  if (authResult instanceof NextResponse) {
+    return authResult;
   }
 
   const { searchParams } = new URL(request.url);

@@ -4,6 +4,8 @@ import { query, pool } from '@/lib/db';
 import { z } from 'zod';
 import { GeminiService } from '@/lib/gemini-service';
 import { StorageService } from '@/lib/storage-service';
+import { requireAdmin } from '@/lib/auth-helpers';
+import { logAuditEvent, getIpAddress, getUserAgent } from '@/lib/audit-logger';
 
 // Extend timeout for image generation (Vercel Pro allows up to 300s)
 export const maxDuration = 300;
@@ -23,11 +25,12 @@ interface GenerationResult {
 
 // POST - Generate images for selected recipes
 export async function POST(request: Request) {
-  const session = await auth();
-  
-  if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  // Require admin role
+  const authResult = await requireAdmin();
+  if (authResult instanceof NextResponse) {
+    return authResult;
   }
+  const adminUser = authResult;
 
   try {
     const body = await request.json();
@@ -157,6 +160,21 @@ export async function POST(request: Request) {
 
     console.log(`\n🎉 Batch completed: ${successCount} successful, ${failCount} failed`);
 
+    // Log the action
+    await logAuditEvent({
+      user: adminUser,
+      action: 'images_generated',
+      resourceType: 'recipe_images',
+      ipAddress: getIpAddress(request),
+      userAgent: getUserAgent(request),
+      details: { 
+        recipeIds, 
+        successCount, 
+        failCount,
+        totalRequested: results.length 
+      }
+    });
+
     return NextResponse.json({
       success: true,
       results,
@@ -188,10 +206,10 @@ export async function POST(request: Request) {
 
 // GET - Get current month's generation stats
 export async function GET() {
-  const session = await auth();
-  
-  if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  // Require admin role
+  const authResult = await requireAdmin();
+  if (authResult instanceof NextResponse) {
+    return authResult;
   }
 
   try {

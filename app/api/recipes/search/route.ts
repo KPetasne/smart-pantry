@@ -4,12 +4,34 @@ import { GeminiService } from '@/lib/gemini-service';
 import { normalizeIngredients, validateRecipeData } from '@/lib/recipe-normalizer';
 import { trackSearch } from '@/lib/analytics';
 import { z } from 'zod';
+import { 
+  checkRateLimit, 
+  getRateLimitInfo, 
+  getRequestIdentifier, 
+  createRateLimitResponse,
+  RateLimitPresets 
+} from '@/lib/rate-limiter-enhanced';
 
 const searchSchema = z.object({
   ingredients: z.array(z.string().min(1)).min(1).max(10),
 });
 
 export async function POST(request: Request) {
+  // Apply aggressive rate limiting for AI generation protection
+  const identifier = getRequestIdentifier(request);
+  const rateLimitConfig = {
+    ...RateLimitPresets.AI_GENERATION,
+    identifier,
+  };
+  
+  const rateLimitInfo = getRateLimitInfo(rateLimitConfig);
+  
+  // Check if rate limited
+  if (!checkRateLimit(rateLimitConfig)) {
+    console.warn(`🚫 Rate limit exceeded for ${identifier}`);
+    return createRateLimitResponse(rateLimitInfo.resetTime);
+  }
+  
   try {
     const body = await request.json();
     const { ingredients } = searchSchema.parse(body);

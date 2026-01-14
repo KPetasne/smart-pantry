@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { query } from '@/lib/db';
+import { requireAdmin } from '@/lib/auth-helpers';
 
 export async function GET() {
-  const session = await auth();
-  
-  if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  // Require admin role
+  const authResult = await requireAdmin();
+  if (authResult instanceof NextResponse) {
+    return authResult;
   }
 
   try {

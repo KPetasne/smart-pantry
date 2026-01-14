@@ -3,6 +3,8 @@ import { auth } from '@/auth';
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 import { query } from '@/lib/db';
+import { requireAdmin, requireSuperAdmin } from '@/lib/auth-helpers';
+import { logAuditEvent, getIpAddress, getUserAgent } from '@/lib/audit-logger';
 
 const userSchema = z.object({
   username: z.string().min(3).max(50),
@@ -11,11 +13,12 @@ const userSchema = z.object({
 
 // POST - Create new admin user
 export async function POST(request: Request) {
-  const session = await auth();
-  
-  if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  // Require admin role to create users
+  const authResult = await requireAdmin();
+  if (authResult instanceof NextResponse) {
+    return authResult;
   }
+  const adminUser = authResult;
 
   try {
     const body = await request.json();
@@ -41,6 +44,17 @@ export async function POST(request: Request) {
       [username, hashedPassword]
     );
 
+    // Log the action
+    await logAuditEvent({
+      user: adminUser,
+      action: 'user_created',
+      resourceType: 'admin_user',
+      resourceId: username,
+      ipAddress: getIpAddress(request),
+      userAgent: getUserAgent(request),
+      details: { username }
+    });
+
     return NextResponse.json({ 
       success: true, 
       message: 'User created successfully' 
@@ -63,19 +77,20 @@ export async function POST(request: Request) {
 
 // GET - List admin users
 export async function GET(request: Request) {
-  const session = await auth();
-  
-  if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  // Require admin role to list users
+  const authResult = await requireAdmin();
+  if (authResult instanceof NextResponse) {
+    return authResult;
   }
 
   try {
     const users = await query<{
       id: number;
       username: string;
+      role: string;
       created_at: Date;
     }>(
-      'SELECT id, username, created_at FROM admin_users ORDER BY created_at DESC'
+      'SELECT id, username, role, created_at FROM admin_users ORDER BY created_at DESC'
     );
 
     return NextResponse.json({ users });
@@ -90,11 +105,12 @@ export async function GET(request: Request) {
 
 // DELETE - Remove admin user
 export async function DELETE(request: Request) {
-  const session = await auth();
-  
-  if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  // Require super_admin role to delete users
+  const authResult = await requireSuperAdmin();
+  if (authResult instanceof NextResponse) {
+    return authResult;
   }
+  const adminUser = authResult;
 
   try {
     const { searchParams } = new URL(request.url);
@@ -107,10 +123,23 @@ export async function DELETE(request: Request) {
       );
     }
 
+    // Get user details before deletion for audit log
+    const targetUser = await query<{ id: string; username: string }>(
+      'SELECT id, username FROM admin_users WHERE id = $1',
+      [parseInt(userId)]
+    );
+
+    if (targetUser.length === 0) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      );
+    }
+
     // Prevent deleting yourself
     const currentUser = await query(
       'SELECT id FROM admin_users WHERE username = $1',
-      [session.user?.name]
+      [adminUser.username]
     );
 
     if (currentUser.length > 0 && currentUser[0].id === parseInt(userId)) {
@@ -122,6 +151,17 @@ export async function DELETE(request: Request) {
 
     // Delete user
     await query('DELETE FROM admin_users WHERE id = $1', [parseInt(userId)]);
+
+    // Log the action
+    await logAuditEvent({
+      user: adminUser,
+      action: 'user_deleted',
+      resourceType: 'admin_user',
+      resourceId: targetUser[0].id,
+      ipAddress: getIpAddress(request),
+      userAgent: getUserAgent(request),
+      details: { deletedUsername: targetUser[0].username }
+    });
 
     return NextResponse.json({ 
       success: true, 

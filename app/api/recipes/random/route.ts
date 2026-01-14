@@ -1,7 +1,26 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
+import { 
+  checkRateLimit, 
+  getRateLimitInfo, 
+  getRequestIdentifier, 
+  createRateLimitResponse,
+  RateLimitPresets 
+} from '@/lib/rate-limiter-enhanced';
 
-export async function GET() {
+export async function GET(request: Request) {
+  // Apply rate limiting to prevent DoS
+  const identifier = getRequestIdentifier(request);
+  const rateLimitConfig = {
+    ...RateLimitPresets.MODERATE,
+    identifier,
+  };
+  
+  if (!checkRateLimit(rateLimitConfig)) {
+    const rateLimitInfo = getRateLimitInfo(rateLimitConfig);
+    return createRateLimitResponse(rateLimitInfo.resetTime);
+  }
+  
   try {
     // Optimized query with JSON aggregation to avoid N+1 problem
     const recipes = await query<{

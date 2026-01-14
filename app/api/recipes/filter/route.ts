@@ -1,6 +1,13 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { z } from 'zod';
+import { 
+  checkRateLimit, 
+  getRateLimitInfo, 
+  getRequestIdentifier, 
+  createRateLimitResponse,
+  RateLimitPresets 
+} from '@/lib/rate-limiter-enhanced';
 
 const filterSchema = z.object({
   diet: z.enum(['carnivore', 'vegan']).optional(),
@@ -9,6 +16,18 @@ const filterSchema = z.object({
 });
 
 export async function POST(request: Request) {
+  // Apply rate limiting
+  const identifier = getRequestIdentifier(request);
+  const rateLimitConfig = {
+    ...RateLimitPresets.MODERATE,
+    identifier,
+  };
+  
+  if (!checkRateLimit(rateLimitConfig)) {
+    const rateLimitInfo = getRateLimitInfo(rateLimitConfig);
+    return createRateLimitResponse(rateLimitInfo.resetTime);
+  }
+  
   try {
     const body = await request.json();
     const { diet, difficulty, limit } = filterSchema.parse(body);

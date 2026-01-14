@@ -3,6 +3,8 @@ import { auth } from '@/auth';
 import { query, execute, pool } from '@/lib/db';
 import { z } from 'zod';
 import { validateRecipeData } from '@/lib/recipe-normalizer';
+import { requireAdmin } from '@/lib/auth-helpers';
+import { logAuditEvent, getIpAddress, getUserAgent } from '@/lib/audit-logger';
 
 // Schema for creating/updating recipes
 const recipeSchema = z.object({
@@ -18,15 +20,15 @@ const recipeSchema = z.object({
 
 // GET - List recipes with pagination
 export async function GET(request: Request) {
-  const session = await auth();
-  
-  if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  // Require admin role
+  const authResult = await requireAdmin();
+  if (authResult instanceof NextResponse) {
+    return authResult;
   }
 
   const { searchParams } = new URL(request.url);
   const page = parseInt(searchParams.get('page') || '1');
-  const limit = parseInt(searchParams.get('limit') || '20');
+  const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100); // Max 100 per page
   const offset = (page - 1) * limit;
 
   try {
@@ -84,11 +86,12 @@ export async function GET(request: Request) {
 
 // POST - Create new recipe
 export async function POST(request: Request) {
-  const session = await auth();
-  
-  if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  // Require admin role
+  const authResult = await requireAdmin();
+  if (authResult instanceof NextResponse) {
+    return authResult;
   }
+  const adminUser = authResult;
 
   try {
     const body = await request.json();
@@ -173,6 +176,17 @@ export async function POST(request: Request) {
       }
 
       await client.query('COMMIT');
+      
+      // Log the action
+      await logAuditEvent({
+        user: adminUser,
+        action: 'recipe_created',
+        resourceType: 'recipe',
+        resourceId: recipeId.toString(),
+        ipAddress: getIpAddress(request),
+        userAgent: getUserAgent(request),
+        details: { title: recipe.title, difficulty: recipe.difficulty }
+      });
       
       return NextResponse.json({
         success: true,

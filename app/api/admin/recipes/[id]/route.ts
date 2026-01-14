@@ -3,6 +3,8 @@ import { auth } from '@/auth';
 import { query, execute, pool } from '@/lib/db';
 import { z } from 'zod';
 import { validateRecipeData } from '@/lib/recipe-normalizer';
+import { requireAdmin } from '@/lib/auth-helpers';
+import { logAuditEvent, getIpAddress, getUserAgent } from '@/lib/audit-logger';
 
 const recipeSchema = z.object({
   title: z.string().min(1).max(255),
@@ -21,10 +23,10 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  
-  if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  // Require admin role
+  const authResult = await requireAdmin();
+  if (authResult instanceof NextResponse) {
+    return authResult;
   }
 
   try {
@@ -106,11 +108,12 @@ export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  
-  if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  // Require admin role
+  const authResult = await requireAdmin();
+  if (authResult instanceof NextResponse) {
+    return authResult;
   }
+  const adminUser = authResult;
 
   try {
     const { id } = await params;
@@ -211,6 +214,17 @@ export async function PUT(
 
       await client.query('COMMIT');
 
+      // Log the action
+      await logAuditEvent({
+        user: adminUser,
+        action: 'recipe_updated',
+        resourceType: 'recipe',
+        resourceId: recipeId.toString(),
+        ipAddress: getIpAddress(request),
+        userAgent: getUserAgent(request),
+        details: { title: recipe.title }
+      });
+
       return NextResponse.json({
         success: true,
         message: 'Recipe updated successfully',
@@ -239,11 +253,12 @@ export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  
-  if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  // Require admin role
+  const authResult = await requireAdmin();
+  if (authResult instanceof NextResponse) {
+    return authResult;
   }
+  const adminUser = authResult;
 
   try {
     const { id } = await params;
@@ -253,14 +268,28 @@ export async function DELETE(
       return NextResponse.json({ error: 'Invalid recipe ID' }, { status: 400 });
     }
 
-    // Check if recipe exists
-    const existing = await query('SELECT id FROM recipes WHERE id = $1', [recipeId]);
+    // Check if recipe exists and get title for audit log
+    const existing = await query<{ id: number; title: string }>(
+      'SELECT id, title FROM recipes WHERE id = $1',
+      [recipeId]
+    );
     if (existing.length === 0) {
       return NextResponse.json({ error: 'Recipe not found' }, { status: 404 });
     }
 
     // Delete recipe (CASCADE will handle recipe_ingredients and instructions)
     await execute('DELETE FROM recipes WHERE id = $1', [recipeId]);
+
+    // Log the action
+    await logAuditEvent({
+      user: adminUser,
+      action: 'recipe_deleted',
+      resourceType: 'recipe',
+      resourceId: recipeId.toString(),
+      ipAddress: getIpAddress(request),
+      userAgent: getUserAgent(request),
+      details: { title: existing[0].title }
+    });
 
     return NextResponse.json({
       success: true,

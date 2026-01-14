@@ -1,12 +1,31 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { z } from 'zod';
+import { 
+  checkRateLimit, 
+  getRateLimitInfo, 
+  getRequestIdentifier, 
+  createRateLimitResponse,
+  RateLimitPresets 
+} from '@/lib/rate-limiter-enhanced';
 
 const subscribeSchema = z.object({
   email: z.string().email('Invalid email address'),
 });
 
 export async function POST(request: Request) {
+  // Apply rate limiting to prevent email list spam
+  const identifier = getRequestIdentifier(request);
+  const rateLimitConfig = {
+    ...RateLimitPresets.EMAIL,
+    identifier,
+  };
+  
+  if (!checkRateLimit(rateLimitConfig)) {
+    const rateLimitInfo = getRateLimitInfo(rateLimitConfig);
+    return createRateLimitResponse(rateLimitInfo.resetTime);
+  }
+  
   try {
     const body = await request.json();
     const { email } = subscribeSchema.parse(body);

@@ -81,30 +81,44 @@ function ScriptModal({ isOpen, onClose, action, username: propUsername, password
       const { executionId: id } = await response.json();
       setExecutionId(id);
 
-      // Poll for logs
-      const interval = setInterval(async () => {
-        try {
-          const logsResponse = await fetch(`/api/admin/scripts?executionId=${id}`);
-          if (logsResponse.ok) {
-            const data = await logsResponse.json();
-            setLogs(data.logs);
-
-            if (data.status === 'completed' || data.status === 'error') {
-              clearInterval(interval);
-              setIsRunning(false);
-            }
-          }
-        } catch (error) {
-          console.error('Error fetching logs:', error);
-        }
-      }, 1000);
-
-      return () => clearInterval(interval);
     } catch (error) {
       setLogs(prev => [...prev, `Error: ${error instanceof Error ? error.message : 'Unknown error'}`]);
       setIsRunning(false);
     }
   };
+
+  // Separate useEffect for polling logs
+  useEffect(() => {
+    if (!executionId || !isRunning) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const logsResponse = await fetch(`/api/admin/scripts?executionId=${executionId}`);
+        
+        // Stop polling if we get 404 (not found) or 403 (forbidden)
+        if (logsResponse.status === 404 || logsResponse.status === 403) {
+          setIsRunning(false);
+          setLogs(prev => [...prev, `Error: Unable to fetch logs (${logsResponse.status})`]);
+          return;
+        }
+        
+        if (logsResponse.ok) {
+          const data = await logsResponse.json();
+          setLogs(data.logs);
+
+          if (data.status === 'completed' || data.status === 'error') {
+            setIsRunning(false);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching logs:', error);
+        // Stop polling on network errors
+        setIsRunning(false);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [executionId, isRunning]);
 
   useEffect(() => {
     if (isOpen && !executionId && !showForm) {

@@ -13,7 +13,10 @@
     "seed": "tsx scripts/seed.ts",
     "cleanup": "tsx scripts/cleanup-duplicates.ts",
     "init-admin": "tsx scripts/init-admin.ts",
-    "add-image-columns": "tsx scripts/add-image-columns.ts"
+    "add-image-columns": "tsx scripts/add-image-columns.ts",
+    "add-role-column": "tsx scripts/add-role-column.ts",
+    "init-audit-logs": "tsx scripts/init-audit-logs.ts",
+    "security-setup": "tsx scripts/add-role-column.ts && tsx scripts/init-audit-logs.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.23.0",

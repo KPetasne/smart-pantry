@@ -2,17 +2,20 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { query } from '@/lib/db';
 import { StorageService } from '@/lib/storage-service';
+import { requireAdmin } from '@/lib/auth-helpers';
+import { logAuditEvent, getIpAddress, getUserAgent } from '@/lib/audit-logger';
 
 // DELETE - Delete image from a recipe
 export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  
-  if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  // Require admin role
+  const authResult = await requireAdmin();
+  if (authResult instanceof NextResponse) {
+    return authResult;
   }
+  const adminUser = authResult;
 
   const resolvedParams = await params;
 
@@ -49,6 +52,17 @@ export async function DELETE(
     );
 
     console.log(`✅ Deleted image for recipe ${recipeId}`);
+
+    // Log the action
+    await logAuditEvent({
+      user: adminUser,
+      action: 'recipe_image_deleted',
+      resourceType: 'recipe',
+      resourceId: recipeId.toString(),
+      ipAddress: getIpAddress(request),
+      userAgent: getUserAgent(request),
+      details: { imageUrl }
+    });
 
     return NextResponse.json({
       success: true,

@@ -1,6 +1,13 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { z } from 'zod';
+import { 
+  checkRateLimit, 
+  getRateLimitInfo, 
+  getRequestIdentifier, 
+  createRateLimitResponse,
+  RateLimitPresets 
+} from '@/lib/rate-limiter-enhanced';
 
 const autocompleteSchema = z.object({
   q: z.string().min(3).max(100),
@@ -8,6 +15,18 @@ const autocompleteSchema = z.object({
 });
 
 export async function GET(request: Request) {
+  // Apply rate limiting to prevent data scraping
+  const identifier = getRequestIdentifier(request);
+  const rateLimitConfig = {
+    ...RateLimitPresets.LENIENT,
+    identifier,
+  };
+  
+  if (!checkRateLimit(rateLimitConfig)) {
+    const rateLimitInfo = getRateLimitInfo(rateLimitConfig);
+    return createRateLimitResponse(rateLimitInfo.resetTime);
+  }
+  
   try {
     const { searchParams } = new URL(request.url);
     const q = searchParams.get('q') || '';
