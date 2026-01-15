@@ -4,6 +4,7 @@ import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Providers } from "./providers";
+import { GoogleAnalytics } from "@/components/GoogleAnalytics";
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
@@ -31,6 +32,7 @@ export default function RootLayout({
     <html lang="es" className={playfair.variable}>
       <head>
         <meta charSet="utf-8" />
+        <GoogleAnalytics />
       </head>
       <body>
         <Providers>
