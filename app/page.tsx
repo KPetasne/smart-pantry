@@ -15,7 +15,7 @@ export default function Home() {
               Tu próxima cena empieza aquí
             </h1>
             <p className="text-md text-gray-500">
-              Ideas que salen de tu alacena
+              Recetas que salen de tu alacena
             </p>
           </div>
 

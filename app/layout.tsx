@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   description: "¿No sabes qué cocinar hoy? Entra en LACENA y encuentra el golpe de inspiración que necesitas. Busca recetas por ingredientes o déjate sorprender por nuestra alacena inteligente. La solución para tu próxima comida está aquí.",
   keywords: ["qué como hoy", "recetas fáciles", "ideas para cenar", "inspiración de recetas", "cocina con lo que tienes", "buscador de recetas por ingredientes", "planificador de comidas", "cocina con sobras", "qué cocinar con lo que hay", "alacena inteligente"],
   openGraph: {
-    title: "LACENA | Ideas que salen de tu alacena",
+    title: "LACENA | Recetas que salen de tu alacena",
     description: "¿No sabes qué cocinar? Encuentra la inspiración que necesitas con recetas por ingredientes. La solución para tu próxima comida está aquí.",
     type: "website",
   },
