@@ -41,11 +41,11 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline'", // Next.js requires unsafe-eval and unsafe-inline
+              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com", // Next.js requires unsafe-eval and unsafe-inline + Google Analytics
               "style-src 'self' 'unsafe-inline'", // Tailwind requires unsafe-inline
               "img-src 'self' data: https: blob:",
               "font-src 'self' data:",
-              "connect-src 'self' https://generativelanguage.googleapis.com https://*.supabase.co",
+              "connect-src 'self' https://generativelanguage.googleapis.com https://*.supabase.co https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com",
               "frame-ancestors 'self'",
               "base-uri 'self'",
               "form-action 'self'",
