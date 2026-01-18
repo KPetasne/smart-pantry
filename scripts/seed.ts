@@ -31,6 +31,19 @@ const COUNTRY_CODE_MAP: { [key: string]: string } = {
   'medio-oriente': 'ME'
 };
 
+// Map country code to country name (for API calls)
+const CODE_TO_COUNTRY_MAP: { [key: string]: Country } = {
+  'AR': 'argentina',
+  'MX': 'mexico',
+  'ES': 'spain',
+  'IT': 'italy',
+  'CN': 'china',
+  'JP': 'japan',
+  'PE': 'peru',
+  'US': 'usa',
+  'ME': 'medio-oriente'
+};
+
 async function initializeSchema(log: LogFunction = console.log) {
   log('Initializing database schema...');
   const schema = `
@@ -216,6 +229,17 @@ export async function seedRecipes(log: LogFunction = console.log, targetRecipes:
   log(`Batch size: ${batchSize}`);
   log(`Using model: ${modelName}`);
   
+  // Convert country code to country name if it looks like a code (2 uppercase letters)
+  let countryForPrompts = selectedCountry;
+  if (selectedCountry && selectedCountry.length === 2 && selectedCountry === selectedCountry.toUpperCase()) {
+    countryForPrompts = CODE_TO_COUNTRY_MAP[selectedCountry] || selectedCountry;
+    log(`Converting country code ${selectedCountry} to ${countryForPrompts}`);
+  }
+  
+  if (countryForPrompts) {
+    log(`Filtering recipes by country: ${countryForPrompts}`);
+  }
+  
   const geminiService = new GeminiService(modelName);
   let successCount = 0;
   let errorCount = 0;
@@ -237,8 +261,8 @@ export async function seedRecipes(log: LogFunction = console.log, targetRecipes:
   log(`Found ${existingTitlesList.length} existing recipe titles`);
   
   // Filter existing titles by country if specific country selected
-  if (selectedCountry) {
-    const countryCode = COUNTRY_CODE_MAP[selectedCountry];
+  if (countryForPrompts) {
+    const countryCode = COUNTRY_CODE_MAP[countryForPrompts];
     const countryFilteredTitles = await query<{ title: string }>(
       `SELECT r.title 
        FROM recipes r 
@@ -247,11 +271,11 @@ export async function seedRecipes(log: LogFunction = console.log, targetRecipes:
       [countryCode]
     );
     existingTitlesList = countryFilteredTitles.map(r => r.title);
-    log(`Filtered to ${existingTitlesList.length} existing ${selectedCountry} recipes for duplicate detection`);
+    log(`Filtered to ${existingTitlesList.length} existing ${countryForPrompts} recipes for duplicate detection`);
   }
   
   const recipesToGenerate = targetRecipes;
-  const countryMsg = selectedCountry ? `from ${selectedCountry}` : 'from all countries';
+  const countryMsg = countryForPrompts ? `from ${countryForPrompts}` : 'from all countries';
   log(`Generating ${recipesToGenerate} new recipes ${countryMsg}...`);
 
   for (let i = 0; i < recipesToGenerate; i += batchSize) {
@@ -263,7 +287,7 @@ export async function seedRecipes(log: LogFunction = console.log, targetRecipes:
     const promises = batch.map(async (recipeNum) => {
       try {
         // Select country based on configuration
-        const randomCountry = selectedCountry || countries[Math.floor(Math.random() * countries.length)];
+        const randomCountry = countryForPrompts || countries[Math.floor(Math.random() * countries.length)];
         
         // Generate recipe with Gemini in Spanish for random country, passing existing titles
         const generatedRecipe = await geminiService.generateRecipe(undefined, randomCountry, 'es', existingTitlesList);
