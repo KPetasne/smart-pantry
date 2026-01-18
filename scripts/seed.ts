@@ -3,6 +3,7 @@ import * as readline from 'readline';
 import { query, execute } from '../lib/db';
 import { GeminiService } from '../lib/gemini-service';
 import { validateRecipeData, type RecipeData } from '../lib/recipe-normalizer';
+import type { Country } from '../lib/prompts';
 
 type LogFunction = (message: string) => void;
 
@@ -210,7 +211,7 @@ async function insertRecipe(recipe: RecipeData, language: string = 'es', country
   return recipeId;
 }
 
-export async function seedRecipes(log: LogFunction = console.log, targetRecipes: number, batchSize: number, modelName: string = 'gemini-2.5-flash', selectedCountry: typeof countries[number] | null = null) {
+export async function seedRecipes(log: LogFunction = console.log, targetRecipes: number, batchSize: number, modelName: string = 'gemini-2.5-flash', selectedCountry: Country | null = null) {
   log(`Starting seed process for ${targetRecipes} recipes...`);
   log(`Batch size: ${batchSize}`);
   log(`Using model: ${modelName}`);
