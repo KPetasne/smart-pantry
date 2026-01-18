@@ -4,7 +4,19 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
-const countries = ['argentina', 'mexico', 'spain', 'italy', 'china', 'japan', 'peru', 'usa'];
+const countries = ['argentina', 'mexico', 'spain', 'italy', 'china', 'japan', 'peru', 'usa', 'medio-oriente'];
+
+const countryNames: { [key: string]: string } = {
+  'argentina': 'Argentina',
+  'mexico': 'México',
+  'spain': 'España',
+  'italy': 'Italia',
+  'china': 'China',
+  'japan': 'Japón',
+  'peru': 'Perú',
+  'usa': 'USA',
+  'medio-oriente': 'Medio Oriente'
+};
 
 export default function NewRecipePage() {
   const router = useRouter();
@@ -157,8 +169,8 @@ export default function NewRecipePage() {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 capitalize"
               >
                 {countries.map(country => (
-                  <option key={country} value={country} className="capitalize">
-                    {country}
+                  <option key={country} value={country}>
+                    {countryNames[country]}
                   </option>
                 ))}
               </select>

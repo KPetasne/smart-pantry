@@ -6,8 +6,9 @@ import { chinaPrompts } from './china';
 import { japanPrompts } from './japan';
 import { peruPrompts } from './peru';
 import { usaPrompts } from './usa';
+import { medioOrientePrompts } from './medio-oriente';
 
-export type Country = 'argentina' | 'mexico' | 'spain' | 'italy' | 'china' | 'japan' | 'peru' | 'usa';
+export type Country = 'argentina' | 'mexico' | 'spain' | 'italy' | 'china' | 'japan' | 'peru' | 'usa' | 'medio-oriente';
 
 export interface CountryPrompts {
   withIngredients: (ingredients: string[]) => string;
@@ -23,6 +24,7 @@ export const countryPrompts: Record<Country, CountryPrompts> = {
   japan: japanPrompts,
   peru: peruPrompts,
   usa: usaPrompts,
+  'medio-oriente': medioOrientePrompts,
 };
 
 export const getPrompt = (

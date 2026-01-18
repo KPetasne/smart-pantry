@@ -12,6 +12,7 @@ import {
 const filterSchema = z.object({
   diet: z.enum(['carnivore', 'vegan']).optional(),
   difficulty: z.enum(['easy', 'medium', 'hard']).optional(),
+  country: z.string().length(2).optional(),
   limit: z.number().int().min(1).max(10).default(3),
 });
 
@@ -30,7 +31,7 @@ export async function POST(request: Request) {
   
   try {
     const body = await request.json();
-    const { diet, difficulty, limit } = filterSchema.parse(body);
+    const { diet, difficulty, country, limit } = filterSchema.parse(body);
 
     let queryText = `
       SELECT r.id, r.title, r.prep_time, r.cook_time, r.difficulty, r.servings, 
@@ -47,6 +48,13 @@ export async function POST(request: Request) {
     if (difficulty) {
       conditions.push(`r.difficulty = $${paramIndex}`);
       params.push(difficulty);
+      paramIndex++;
+    }
+
+    // Filter by country if provided
+    if (country) {
+      conditions.push(`c.code = $${paramIndex}`);
+      params.push(country);
       paramIndex++;
     }
 

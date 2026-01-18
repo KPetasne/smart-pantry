@@ -16,6 +16,7 @@
     "add-image-columns": "tsx scripts/add-image-columns.ts",
     "add-role-column": "tsx scripts/add-role-column.ts",
     "init-audit-logs": "tsx scripts/init-audit-logs.ts",
+    "add-medio-oriente": "tsx scripts/add-medio-oriente.ts",
     "security-setup": "tsx scripts/add-role-column.ts && tsx scripts/init-audit-logs.ts"
   },
   "dependencies": {

@@ -146,7 +146,8 @@ async function insertRecipe(recipe: RecipeData, language: string = 'es', country
     'china': 'CN',
     'japan': 'JP',
     'peru': 'PE',
-    'usa': 'US'
+    'usa': 'US',
+    'medio-oriente': 'ME'
   };
   
   const countryCode = countryCodeMap[country.toLowerCase()] || 'AR';
@@ -209,7 +210,7 @@ async function insertRecipe(recipe: RecipeData, language: string = 'es', country
   return recipeId;
 }
 
-export async function seedRecipes(log: LogFunction = console.log, targetRecipes: number, batchSize: number, modelName: string = 'gemini-2.5-flash') {
+export async function seedRecipes(log: LogFunction = console.log, targetRecipes: number, batchSize: number, modelName: string = 'gemini-2.5-flash', selectedCountry: typeof countries[number] | null = null) {
   log(`Starting seed process for ${targetRecipes} recipes...`);
   log(`Batch size: ${batchSize}`);
   log(`Using model: ${modelName}`);
@@ -219,7 +220,7 @@ export async function seedRecipes(log: LogFunction = console.log, targetRecipes:
   let errorCount = 0;
 
   // Available countries for recipe generation
-  const countries = ['argentina', 'mexico', 'spain', 'italy', 'china', 'japan', 'peru', 'usa'] as const;
+  const countries = ['argentina', 'mexico', 'spain', 'italy', 'china', 'japan', 'peru', 'usa', 'medio-oriente'] as const;
 
   // Check how many recipes already exist
   const existing = await query<{ count: string }>('SELECT COUNT(*) as count FROM recipes');
@@ -231,11 +232,26 @@ export async function seedRecipes(log: LogFunction = console.log, targetRecipes:
   // Get existing recipe titles to avoid duplicates
   log('Fetching existing recipe titles to avoid duplicates...');
   const existingTitles = await query<{ title: string }>('SELECT title FROM recipes');
-  const existingTitlesList = existingTitles.map(r => r.title);
+  let existingTitlesList = existingTitles.map(r => r.title);
   log(`Found ${existingTitlesList.length} existing recipe titles`);
   
+  // Filter existing titles by country if specific country selected
+  if (selectedCountry) {
+    const countryCode = countryCodeMap[selectedCountry];
+    const countryFilteredTitles = await query<{ title: string }>(
+      `SELECT r.title 
+       FROM recipes r 
+       INNER JOIN countries c ON r.country_id = c.id 
+       WHERE c.code = $1`,
+      [countryCode]
+    );
+    existingTitlesList = countryFilteredTitles.map(r => r.title);
+    log(`Filtered to ${existingTitlesList.length} existing ${selectedCountry} recipes for duplicate detection`);
+  }
+  
   const recipesToGenerate = targetRecipes;
-  log(`Generating ${recipesToGenerate} new recipes from all countries...`);
+  const countryMsg = selectedCountry ? `from ${selectedCountry}` : 'from all countries';
+  log(`Generating ${recipesToGenerate} new recipes ${countryMsg}...`);
 
   for (let i = 0; i < recipesToGenerate; i += batchSize) {
     const currentBatchSize = Math.min(batchSize, recipesToGenerate - i);
@@ -245,8 +261,8 @@ export async function seedRecipes(log: LogFunction = console.log, targetRecipes:
 
     const promises = batch.map(async (recipeNum) => {
       try {
-        // Select random country
-        const randomCountry = countries[Math.floor(Math.random() * countries.length)];
+        // Select country based on configuration
+        const randomCountry = selectedCountry || countries[Math.floor(Math.random() * countries.length)];
         
         // Generate recipe with Gemini in Spanish for random country, passing existing titles
         const generatedRecipe = await geminiService.generateRecipe(undefined, randomCountry, 'es', existingTitlesList);
@@ -325,6 +341,36 @@ async function main() {
       process.exit(1);
     }
     
+    // Show country options
+    console.log('\nPaíses disponibles:');
+    console.log('0. Todos los países (aleatorio)');
+    const countryNames: { [key: string]: string } = {
+      'argentina': 'Argentina',
+      'mexico': 'México',
+      'spain': 'España',
+      'italy': 'Italia',
+      'china': 'China',
+      'japan': 'Japón',
+      'peru': 'Perú',
+      'usa': 'USA',
+      'medio-oriente': 'Medio Oriente'
+    };
+    const countryList = ['argentina', 'mexico', 'spain', 'italy', 'china', 'japan', 'peru', 'usa', 'medio-oriente'] as const;
+    countryList.forEach((country, index) => {
+      console.log(`${index + 1}. ${countryNames[country]}`);
+    });
+    
+    const countryAnswer = await question(rl, '\nSelecciona el número del país (0 para todos): ');
+    const countryIndex = parseInt(countryAnswer);
+    
+    if (isNaN(countryIndex) || countryIndex < 0 || countryIndex > countryList.length) {
+      console.error('Error: Debes seleccionar un número válido de la lista');
+      rl.close();
+      process.exit(1);
+    }
+    
+    const selectedCountry = countryIndex === 0 ? null : countryList[countryIndex - 1];
+    
     // Show model options
     console.log('\nModelos disponibles:');
     GEMINI_MODELS.forEach((model, index) => {
@@ -347,10 +393,11 @@ async function main() {
     console.log('\n--- Configuración ---');
     console.log(`Recetas: ${targetRecipes}`);
     console.log(`Batch: ${batchSize}`);
+    console.log(`País: ${selectedCountry ? countryNames[selectedCountry] : 'Todos (aleatorio)'}`);
     console.log(`Modelo: ${selectedModel}`);
     console.log('---\n');
     
-    await seedRecipes(console.log, targetRecipes, batchSize, selectedModel);
+    await seedRecipes(console.log, targetRecipes, batchSize, selectedModel, selectedCountry);
     process.exit(0);
   } catch (error) {
     console.error('Fatal error during seeding:', error);

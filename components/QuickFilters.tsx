@@ -18,6 +18,7 @@ interface Recipe {
 export default function QuickFilters() {
   const [selectedDiet, setSelectedDiet] = useState<'carnivore' | 'vegan' | null>(null);
   const [selectedDifficulty, setSelectedDifficulty] = useState<'easy' | 'medium' | 'hard' | null>(null);
+  const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,6 +44,7 @@ export default function QuickFilters() {
         body: JSON.stringify({
           diet: selectedDiet || undefined,
           difficulty: selectedDifficulty || undefined,
+          country: selectedCountry || undefined,
           limit: 3,
         }),
       });
@@ -109,6 +111,26 @@ export default function QuickFilters() {
                 </button>
               ))}
             </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-carbon mb-2">País</label>
+            <select
+              value={selectedCountry || ''}
+              onChange={(e) => setSelectedCountry(e.target.value || null)}
+              className="w-full px-4 py-2 rounded-lg border border-gray-300 bg-white text-carbon focus:outline-none focus:ring-2 focus:ring-terracota"
+            >
+              <option value="">Todos los países</option>
+              <option value="AR">Argentina</option>
+              <option value="MX">México</option>
+              <option value="ES">España</option>
+              <option value="IT">Italia</option>
+              <option value="CN">China</option>
+              <option value="JP">Japón</option>
+              <option value="PE">Perú</option>
+              <option value="US">USA</option>
+              <option value="ME">Medio Oriente</option>
+            </select>
           </div>
 
           <button
