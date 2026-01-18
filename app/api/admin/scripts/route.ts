@@ -10,6 +10,7 @@ const scriptSchema = z.object({
     targetRecipes: z.number().int().positive().optional(),
     batchSize: z.number().int().positive().optional(),
     model: z.string().optional(),
+    country: z.string().optional(),
     username: z.string().optional(),
     password: z.string().optional(),
   }).optional(),
@@ -104,7 +105,7 @@ export async function GET(request: Request) {
 async function executeScript(
   executionId: string,
   action: 'seed' | 'cleanup' | 'cleanup-empty' | 'create-user',
-  params?: { targetRecipes?: number; batchSize?: number; model?: string; username?: string; password?: string }
+  params?: { targetRecipes?: number; batchSize?: number; model?: string; country?: string; username?: string; password?: string }
 ) {
   const execution = activeExecutions.get(executionId);
   if (!execution) return;
@@ -119,14 +120,18 @@ async function executeScript(
       const targetRecipes = params?.targetRecipes || 20;
       const batchSize = params?.batchSize || 2;
       const model = params?.model || 'gemini-2.5-flash';
+      const country = params?.country || null;
       
       log(`Target recipes: ${targetRecipes}`);
       log(`Batch size: ${batchSize}`);
       log(`Model: ${model}`);
+      if (country) {
+        log(`Country filter: ${country}`);
+      }
       
       // Import and execute seed function
       const { seedRecipes } = await import('@/scripts/seed');
-      await seedRecipes(log, targetRecipes, batchSize, model);
+      await seedRecipes(log, targetRecipes, batchSize, model, country as any);
       log('Seed script completed successfully');
       execution.status = 'completed';
     } else if (action === 'cleanup') {

@@ -33,6 +33,7 @@ function ScriptModal({ isOpen, onClose, action, username: propUsername, password
   const [targetRecipes, setTargetRecipes] = useState('20');
   const [batchSize, setBatchSize] = useState('2');
   const [model, setModel] = useState('gemini-2.5-flash');
+  const [selectedCountry, setSelectedCountry] = useState<string>('');
   
   // User parameters
   const [username, setUsername] = useState(propUsername || '');
@@ -47,6 +48,18 @@ function ScriptModal({ isOpen, onClose, action, username: propUsername, password
     'gemini-2.0-flash'
   ];
 
+  const countries: { code: string; name: string }[] = [
+    { code: 'AR', name: 'Argentina' },
+    { code: 'MX', name: 'México' },
+    { code: 'ES', name: 'España' },
+    { code: 'IT', name: 'Italia' },
+    { code: 'CN', name: 'China' },
+    { code: 'JP', name: 'Japón' },
+    { code: 'PE', name: 'Perú' },
+    { code: 'US', name: 'Estados Unidos' },
+    { code: 'ME', name: 'Medio Oriente' },
+  ];
+
   const runScript = async () => {
     setIsRunning(true);
     setLogs([]);
@@ -58,7 +71,8 @@ function ScriptModal({ isOpen, onClose, action, username: propUsername, password
         ? {
             targetRecipes: parseInt(targetRecipes),
             batchSize: parseInt(batchSize),
-            model
+            model,
+            ...(selectedCountry && { country: selectedCountry })
           }
         : action === 'create-user'
         ? {
@@ -206,6 +220,24 @@ function ScriptModal({ isOpen, onClose, action, username: propUsername, password
                   {models.map((m) => (
                     <option key={m} value={m}>
                       {m}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  País (opcional)
+                </label>
+                <select
+                  value={selectedCountry}
+                  onChange={(e) => setSelectedCountry(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                >
+                  <option value="">Todos los países</option>
+                  {countries.map((country) => (
+                    <option key={country.code} value={country.code}>
+                      {country.name}
                     </option>
                   ))}
                 </select>
