@@ -18,6 +18,19 @@ const GEMINI_MODELS = [
 
 type GeminiModel = typeof GEMINI_MODELS[number];
 
+// Map country name to country code
+const COUNTRY_CODE_MAP: { [key: string]: string } = {
+  'argentina': 'AR',
+  'mexico': 'MX',
+  'spain': 'ES',
+  'italy': 'IT',
+  'china': 'CN',
+  'japan': 'JP',
+  'peru': 'PE',
+  'usa': 'US',
+  'medio-oriente': 'ME'
+};
+
 async function initializeSchema(log: LogFunction = console.log) {
   log('Initializing database schema...');
   const schema = `
@@ -138,20 +151,7 @@ async function getCountryId(countryCode: string): Promise<number> {
 }
 
 async function insertRecipe(recipe: RecipeData, language: string = 'es', country: string = 'argentina'): Promise<number> {
-  // Map country name to country code
-  const countryCodeMap: { [key: string]: string } = {
-    'argentina': 'AR',
-    'mexico': 'MX',
-    'spain': 'ES',
-    'italy': 'IT',
-    'china': 'CN',
-    'japan': 'JP',
-    'peru': 'PE',
-    'usa': 'US',
-    'medio-oriente': 'ME'
-  };
-  
-  const countryCode = countryCodeMap[country.toLowerCase()] || 'AR';
+  const countryCode = COUNTRY_CODE_MAP[country.toLowerCase()] || 'AR';
   const countryId = await getCountryId(countryCode);
   
   // Insert recipe with new schema (description, prep_time, cook_time, country_id, servings)
@@ -238,7 +238,7 @@ export async function seedRecipes(log: LogFunction = console.log, targetRecipes:
   
   // Filter existing titles by country if specific country selected
   if (selectedCountry) {
-    const countryCode = countryCodeMap[selectedCountry];
+    const countryCode = COUNTRY_CODE_MAP[selectedCountry];
     const countryFilteredTitles = await query<{ title: string }>(
       `SELECT r.title 
        FROM recipes r 
